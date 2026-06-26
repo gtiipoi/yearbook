@@ -683,15 +683,27 @@ async function doLogin() {
       return;
     }
 
-    // 2. 查找对应的 student
-    const { data: student, error: stError } = await sb.from('students')
+    // 2. 查找对应的 student，找不到就自动创建一个
+    let { data: student, error: stError } = await sb.from('students')
       .select('*').eq('auth_id', authData.user.id).single();
 
     if (stError || !student) {
-      showError('未找到关联的用户信息，请先注册');
-      await sb.auth.signOut();
-      btn.disabled = false; btn.textContent = '🔑 登录';
-      return;
+      // 自动补建用户记录（之前注册时 RLS 失败但 Auth 已创建的）
+      const { data: newStudent, error: createError } = await sb.from('students')
+        .insert({
+          auth_id: authData.user.id,
+          name: authData.user.email.split('@')[0],
+          cls: '高三(1)班',
+          avatar: '🌟'
+        })
+        .select().single();
+
+      if (createError) {
+        showError('创建用户信息失败: ' + createError.message);
+        btn.disabled = false; btn.textContent = '🔑 登录';
+        return;
+      }
+      student = newStudent;
     }
 
     // 3. 登录成功
