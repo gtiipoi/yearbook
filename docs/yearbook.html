@@ -279,6 +279,26 @@ body {
 @keyframes loadingDots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 
 /* ============================================ */
+/*  照片墙                                       */
+/* ============================================ */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-top:16px}
+.photo-card{background:var(--card-bg);border-radius:var(--radius-sm);overflow:hidden;box-shadow:var(--shadow);transition:all var(--transition)}
+.photo-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.photo-card img{width:100%;height:180px;object-fit:cover;display:block}
+.photo-card .pc-info{padding:10px 14px}
+.photo-card .pc-caption{font-size:13px;color:var(--text)}
+.photo-card .pc-uploader{font-size:11px;color:var(--text-light);margin-top:4px}
+.photo-card .pc-time{font-size:10px;color:#c0b8c8}
+.upload-area{
+  background:var(--card-bg);border:2px dashed #e0d8e8;border-radius:var(--radius);
+  padding:40px;text-align:center;cursor:pointer;transition:all var(--transition);margin-bottom:24px
+}
+.upload-area:hover{border-color:var(--pink);background:var(--pink-soft)}
+.upload-area .ua-icon{font-size:48px;margin-bottom:12px}
+.upload-area .ua-text{font-size:14px;color:var(--text-light)}
+.upload-area input[type=file]{display:none}
+
+/* ============================================ */
 /*  响应式                                       */
 /* ============================================ */
 @media(max-width:600px){
@@ -316,6 +336,7 @@ body {
         <div class="nav-avatar" id="navAvatar"></div>
         <span id="navName"></span>
       </div>
+      <button class="btn btn-outline" id="btnPhotos" style="display:none;margin-right:8px" onclick="goPhotos()">📷 照片墙</button>
       <button class="btn btn-logout" id="btnLogout" style="display:none" onclick="doLogout()">🚪 登出</button>
     </div>
   </nav>
@@ -408,19 +429,23 @@ async function render() {
   if (view === 'login') await renderLogin();
   else if (view === 'hall') await renderHall();
   else if (view === 'profile') await renderProfile();
+  else if (view === 'photos') await renderPhotos();
 }
 
 function updateNav() {
   const u = document.getElementById('navUser');
   const b = document.getElementById('btnLogout');
+  const pb = document.getElementById('btnPhotos');
   if (me) {
     u.style.display = 'flex';
     document.getElementById('navAvatar').textContent = me.avatar;
     document.getElementById('navName').textContent = me.name;
     b.style.display = '';
+    if (pb) pb.style.display = '';
   } else {
     u.style.display = 'none';
     b.style.display = 'none';
+    if (pb) pb.style.display = 'none';
   }
 }
 
@@ -745,7 +770,7 @@ async function renderHall() {
     </div>
     <p class="hall-hint">✨ 鼠标悬停头像星球会停下，点击进入 TA 的主页</p>
   `;
-  initPhotoBg();
+  await initPhotoBg();
   requestAnimationFrame(() => requestAnimationFrame(() => initSphere(students)));
 }
 
@@ -823,14 +848,36 @@ function switchToPhoto(n) {
   d.timer = setInterval(() => switchToPhoto(d.idx + 1), 3000);
 }
 
-function initPhotoBg() {
+async function initPhotoBg() {
   const d = _photoData;
   clearInterval(d.timer);
   const container = document.getElementById('hallPhotos');
   if (!container) return;
   d.container = container;
-  d.photos = PHOTO_FILES;
-  container.innerHTML = d.photos.map((f, i) => `<div class="hall-photo${i === 0 ? ' on' : ''}" style="background-image:url(${PHOTO_BASE}${encodeURI(f)})"></div>`).join('');
+
+  // 尝试从照片墙加载背景图
+  let urls = [];
+  try {
+    const { data: photosData } = await sb.from('photos').select('url').order('created_at', { ascending: false }).limit(11);
+    if (photosData && photosData.length > 0) {
+      urls = photosData.map(p => p.url);
+    }
+  } catch(e) {}
+
+  // 没有照片则用渐变色做背景
+  if (urls.length === 0) {
+    const gradients = [
+      'linear-gradient(135deg, #fdd4e0, #c4b5fd)',
+      'linear-gradient(135deg, #d4e4ff, #f0d4e0)',
+      'linear-gradient(135deg, #ffe0d4, #c4d5fd)',
+      'linear-gradient(135deg, #e0d4ff, #fdd4e0)',
+    ];
+    d.photos = gradients;
+    container.innerHTML = gradients.map((g, i) => `<div class="hall-photo${i === 0 ? ' on' : ''}" style="background:${g}"></div>`).join('');
+  } else {
+    d.photos = urls;
+    container.innerHTML = urls.map((u, i) => `<div class="hall-photo${i === 0 ? ' on' : ''}" style="background-image:url(${u})"></div>`).join('');
+  }
 
   const scene = document.getElementById('hallScene');
   let dotsEl = document.getElementById('photoDots');
@@ -1034,6 +1081,7 @@ async function renderProfile() {
   `;
 }
 
+function goPhotos() { viewing = null; view = 'photos'; render(); }
 async function backToHall() { viewing = null; view = 'hall'; await render(); }
 
 /* ============================================ */
@@ -1091,6 +1139,97 @@ function openWrite() {
     overlay.remove();
     await render(); // 刷新个人主页（re-render profile）
   };
+}
+
+/* ============================================ */
+/*  照片墙                                       */
+/* ============================================ */
+async function renderPhotos() {
+  // Fetch photos from Supabase
+  const { data: photos, error } = await sb.from('photos')
+    .select('*, uploader:uploader_id(name,avatar)')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><p>加载照片失败</p></div>';
+    return;
+  }
+
+  let photosHTML = '';
+  if (!photos || photos.length === 0) {
+    photosHTML = '<div class="empty-state"><div class="empty-icon">📷</div><p>还没有照片</p><p style="font-size:12px">来做第一个上传的人吧 ✨</p></div>';
+  } else {
+    photosHTML = '<div class="photo-grid">' + photos.map(p => {
+      const t = new Date(p.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const uploaderName = p.uploader ? p.uploader.name : '未知';
+      return `<div class="photo-card">
+        <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+        <div class="pc-info">
+          ${p.caption ? `<div class="pc-caption">${p.caption}</div>` : ''}
+          <div class="pc-uploader">📤 ${uploaderName}</div>
+          <div class="pc-time">${t}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  document.getElementById('view').innerHTML = `
+    <button class="btn btn-back mb-16" onclick="backToHall()">← 返回大厅</button>
+    <div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">📷 我们的照片墙</div>
+    <p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:16px">记录我们的青春瞬间</p>
+    ${me ? `
+    <div class="upload-area" id="uploadArea">
+      <div class="ua-icon">📤</div>
+      <div class="ua-text">点击上传照片</div>
+      <input type="file" id="photoFile" accept="image/*">
+    </div>
+    ` : '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">登录后即可上传照片</p>'}
+    ${photosHTML}
+  `;
+
+  // 绑定上传事件
+  if (me) {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('photoFile');
+    if (uploadArea && fileInput) {
+      uploadArea.onclick = () => fileInput.click();
+      fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        // 限制 5MB
+        if (file.size > 5 * 1024 * 1024) { alert('照片不能超过 5MB'); return; }
+
+        const caption = prompt('给照片加个描述（可选）：');
+        uploadArea.innerHTML = '<div class="ua-icon">⏳</div><div class="ua-text">上传中...</div>';
+
+        const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        
+        // 上传到 Supabase Storage
+        const { data: uploadData, error: uploadError } = await sb.storage
+          .from('yearbook-assets')
+          .upload('photos/' + fileName, file);
+
+        if (uploadError) {
+          alert('上传失败: ' + uploadError.message);
+          renderPhotos();
+          return;
+        }
+
+        // 获取公开 URL
+        const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('photos/' + fileName);
+        
+        // 保存到 photos 表
+        await sb.from('photos').insert({
+          uploader_id: me.id,
+          url: urlData.publicUrl,
+          caption: caption || ''
+        });
+
+        // 刷新照片墙
+        await renderPhotos();
+      };
+    }
+  }
 }
 
 /* ============================================ */
