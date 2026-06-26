@@ -325,6 +325,12 @@ body {
 const SUPABASE_URL = 'https://sxjrmlylgcadzfitascx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT';
 
+// 捕获顶层 JS 错误
+window.onerror = function(msg, url, line) {
+  document.getElementById('view').innerHTML = '<div style="text-align:center;padding:60px 20px"><div style="font-size:56px;margin-bottom:16px">💥</div><h3 style="color:#4a3f52;margin-bottom:8px">JS 错误</h3><pre style="color:#c06070;font-size:11px;text-align:left;max-width:500px;margin:0 auto;white-space:pre-wrap">' + (msg||'') + '</pre><p style="color:#8a7f92;font-size:11px;margin-top:8px">行: ' + (line||'?') + '</p></div>';
+  return true;
+};
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 本地照片路径（部署到 Vercel 前需上传至 Supabase Storage）
@@ -1047,6 +1053,7 @@ async function init() {
   }
 }
 
+document.getElementById('view').innerHTML = '<div class="loading">初始化中...</div>';
 init();
 </script>
 </body>
