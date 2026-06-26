@@ -316,13 +316,13 @@ body {
 </div>
 
 <!-- Supabase SDK (本地文件) -->
-<script src="supabase.min.js"></script>
+<script src="sb.min.js"></script>
 
 <script>
 /* ============================================ */
 /*  Supabase 初始化                                */
 /* ============================================ */
-const SUPABASE_URL = 'https://sxjrmlylgcadzfitascx.supabase.co';
+const SUPABASE_URL = 'https://sxjrmlylgcadzfitascx.sb.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT';
 
 // 捕获顶层 JS 错误
@@ -331,7 +331,7 @@ window.onerror = function(msg, url, line) {
   return true;
 };
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 本地照片路径（部署到 Vercel 前需上传至 Supabase Storage）
 const PHOTO_FILES = [
@@ -365,7 +365,7 @@ let viewing = null;     // 正在查看的学生
 /*  数据层 — Supabase API                        */
 /* ============================================ */
 async function fetchStudents() {
-  const { data, error } = await supabase.from('students')
+  const { data, error } = await sb.from('students')
     .select('*')
     .order('is_seed', { ascending: false })
     .order('created_at', { ascending: true });
@@ -374,7 +374,7 @@ async function fetchStudents() {
 }
 
 async function fetchReviews(tid) {
-  const { data, error } = await supabase.from('reviews')
+  const { data, error } = await sb.from('reviews')
     .select('*, author:author_id(name,avatar)')
     .eq('target_id', tid)
     .order('created_at', { ascending: false });
@@ -383,7 +383,7 @@ async function fetchReviews(tid) {
 }
 
 async function getStudent(id) {
-  const { data } = await supabase.from('students').select('*').eq('id', id).single();
+  const { data } = await sb.from('students').select('*').eq('id', id).single();
   return data;
 }
 
@@ -555,7 +555,7 @@ async function doRegister() {
   setLoading(true); showError('');
   try {
     // 1. Supabase Auth 注册
-    const { data: authData, error: authError } = await supabase.auth.signUp({ email, password: pwd });
+    const { data: authData, error: authError } = await sb.auth.signUp({ email, password: pwd });
 
     // 检查是否邮箱已存在
     if (authError) {
@@ -576,7 +576,7 @@ async function doRegister() {
     }
 
     // 2. 在 students 表中创建记录
-    const { data: student, error: insertError } = await supabase.from('students')
+    const { data: student, error: insertError } = await sb.from('students')
       .insert({ auth_id: authData.user.id, name, cls, avatar })
       .select().single();
 
@@ -610,7 +610,7 @@ async function doLogin() {
 
   try {
     // 1. Supabase Auth 登录
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password: pwd });
+    const { data: authData, error: authError } = await sb.auth.signInWithPassword({ email, password: pwd });
 
     if (authError) {
       showError(authError.message.includes('Invalid')
@@ -621,12 +621,12 @@ async function doLogin() {
     }
 
     // 2. 查找对应的 student
-    const { data: student, error: stError } = await supabase.from('students')
+    const { data: student, error: stError } = await sb.from('students')
       .select('*').eq('auth_id', authData.user.id).single();
 
     if (stError || !student) {
       showError('未找到关联的用户信息，请先注册');
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       btn.disabled = false; btn.textContent = '🔑 登录';
       return;
     }
@@ -643,7 +643,7 @@ async function doLogin() {
 }
 
 async function doLogout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   me = null; view = 'login'; viewing = null;
   await render();
 }
@@ -978,7 +978,7 @@ function openWrite() {
     const btn = overlay.querySelector('#rvSubmit');
     btn.disabled = true; btn.textContent = '提交中...';
 
-    const { error } = await supabase.from('reviews').insert({
+    const { error } = await sb.from('reviews').insert({
       target_id: s.id,
       author_id: me.id,
       strengths: st,
@@ -1002,14 +1002,14 @@ function openWrite() {
 /* ============================================ */
 async function init() {
   // 检查 SDK 是否加载
-  if (typeof supabase === 'undefined' || !supabase.from) {
+  if (!sb || !sb.from) {
     document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><p>SDK 加载失败</p><p style="font-size:12px">请检查网络连接后刷新页面</p></div>';
     return;
   }
 
   try {
     // 1. 尝试恢复登录 session (添加超时)
-    const sessionPromise = supabase.auth.getSession();
+    const sessionPromise = sb.auth.getSession();
     const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
 
     let session;
@@ -1022,7 +1022,7 @@ async function init() {
     }
 
     if (session) {
-      const { data: student, error } = await supabase.from('students')
+      const { data: student, error } = await sb.from('students')
         .select('*').eq('auth_id', session.user.id).single();
       if (student && !error) {
         me = student;
@@ -1031,12 +1031,12 @@ async function init() {
     }
 
     // 2. 监听 auth 状态变化
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         me = null; view = 'login'; viewing = null;
         await render();
       } else if (event === 'SIGNED_IN' && session) {
-        const { data: student } = await supabase.from('students')
+        const { data: student } = await sb.from('students')
           .select('*').eq('auth_id', session.user.id).single();
         if (student) {
           me = student; view = 'hall'; viewing = null;
