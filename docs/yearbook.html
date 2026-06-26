@@ -462,7 +462,7 @@ async function renderLogin() {
         <input type="password" id="regPwd" placeholder="设置密码（至少6位）" autocomplete="new-password" minlength="6">
         <label>你的名字</label>
         <input type="text" id="regName" placeholder="输入你的名字" maxlength="12">
-        <label>班级 & 头像</label>
+        <label>录取院校 & 头像</label>
         <div class="form-row">
           <select id="regClass">
             <option>高一(1)班</option>
@@ -551,7 +551,7 @@ async function renderLogin() {
           ${registered.map(s => `
             <div class="existing-item" data-sid="${s.id}" style="cursor:pointer">
               <div class="ei-avatar">${s.avatar}</div>
-              <div style="flex:1"><div class="ei-name">${s.name}</div><div class="ei-class">${s.cls}</div></div>
+              <div style="flex:1"><div class="ei-name">${s.name}</div><div class="ei-class">🎓 ${s.cls}</div></div>
             </div>
           `).join('')}
         </div>
@@ -562,7 +562,7 @@ async function renderLogin() {
           ${seeds.map(s => `
             <div class="existing-item seed" data-sid="${s.id}">
               <div class="ei-avatar">${s.avatar}</div>
-              <div style="flex:1"><div class="ei-name">${s.name}</div><div class="ei-class">${s.cls}</div></div>
+              <div style="flex:1"><div class="ei-name">${s.name}</div><div class="ei-class">🎓 ${s.cls}</div></div>
               <span class="seed-badge">演示</span>
             </div>
           `).join('')}
@@ -958,7 +958,7 @@ function animateSphere(cvs, S, dpr) {
       ctx.fillText(label, p.sx, ny + 2);
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.font = `10px "PingFang SC","Microsoft YaHei",sans-serif`;
-      ctx.fillText(p.student.cls, p.sx, ny + 16);
+      ctx.fillText("🎓 "+p.student.cls, p.sx, ny + 16);
     }
   });
 
@@ -1019,7 +1019,7 @@ async function renderProfile() {
     <div class="profile-header">
       <div class="ph-avatar">${s.avatar}</div>
       <div class="ph-name">${s.name}${isMe ? '（我）' : ''}</div>
-      <div class="ph-class">${s.cls}</div>
+      <div class="ph-class">🎓 ${s.cls}</div>
       <div class="stats-row">
         <div class="stat-item"><div class="stat-num">${sc}</div><div class="stat-label">✨ 优点</div></div>
         <div class="stat-item"><div class="stat-num">${wc}</div><div class="stat-label">💡 待改进</div></div>
