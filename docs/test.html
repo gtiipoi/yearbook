@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>网络诊断</title></head>
+<body style="font-family:sans-serif;padding:40px;max-width:600px;margin:0 auto">
+<h2>🔍 网络连通性诊断</h2>
+<div id="log"></div>
+<script>
+const log = document.getElementById('log');
+function add(msg, color) {
+  log.innerHTML += `<p style="color:${color||'#333'};margin:8px 0;font-size:14px">${msg}</p>`;
+}
+async function test() {
+  add('1. JS 脚本执行 ✅', 'green');
+
+  // 测试 Supabase REST API
+  add('2. 测试 Supabase API 连接...', 'blue');
+  try {
+    const r = await fetch('https://sxjrmlylgcadzfitascx.supabase.co/rest/v1/students?limit=1', {
+      headers: { 'apikey': 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT', 'Authorization': 'Bearer sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT' }
+    });
+    if (r.ok) {
+      const data = await r.json();
+      add(`2. Supabase API 连接成功 ✅ (${data.length}条学生数据)`, 'green');
+    } else {
+      add(`2. API 返回错误: ${r.status}`, 'red');
+    }
+  } catch(e) {
+    add(`2. API 连接失败 ❌ — ${e.message}`, 'red');
+    add('→ Supabase API 被墙，需要代理/VPN', 'red');
+  }
+
+  // 测试 Supabase Auth
+  add('3. 测试 Supabase Auth 连接...', 'blue');
+  try {
+    const r = await fetch('https://sxjrmlylgcadzfitascx.supabase.co/auth/v1/settings', {
+      headers: { 'apikey': 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT' }
+    });
+    if (r.ok) {
+      add('3. Supabase Auth 连接成功 ✅', 'green');
+    } else {
+      add(`3. Auth 返回: ${r.status}`, 'orange');
+    }
+  } catch(e) {
+    add(`3. Auth 连接失败 ❌ — ${e.message}`, 'red');
+  }
+}
+test();
+</script>
+</body>
+</html>
