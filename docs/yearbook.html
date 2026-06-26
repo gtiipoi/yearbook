@@ -282,12 +282,19 @@ body {
 /*  响应式                                       */
 /* ============================================ */
 @media(max-width:600px){
-  .login-card{padding:32px 20px}
+  .container{padding:12px 8px 40px}
+  .login-card{padding:28px 16px;margin:20px auto}
   .form-row{flex-direction:column}
-  .profile-header{padding:24px}
-  .stats-row{gap:20px}
-  .modal{padding:24px}
-  .navbar{padding:10px 16px}
+  .profile-header{padding:20px 16px}
+  .stats-row{gap:16px;flex-wrap:wrap}
+  .stat-num{font-size:24px}
+  .modal{padding:24px 16px;margin:10px}
+  .navbar{padding:10px 14px}
+  .nav-title{font-size:17px}
+  .hall-scene{max-width:100%}
+  .hall-hint{font-size:11px}
+  .ph-name{font-size:20px}
+  .review-card{padding:14px 16px}
 }
 </style>
 </head>
@@ -769,12 +776,26 @@ function initSphere(students) {
     return { student: s, bx: Math.cos(th) * ry * R, by: y * R, bz: Math.sin(th) * ry * R };
   });
 
-  cvs.onmousemove = e => {
+  function getCanvasXY(clientX, clientY) {
     const r = cvs.getBoundingClientRect();
-    sMx = (e.clientX - r.left) * (cvs.width / r.width);
-    sMy = (e.clientY - r.top) * (cvs.height / r.height);
+    return {
+      x: (clientX - r.left) * (cvs.width / r.width),
+      y: (clientY - r.top) * (cvs.height / r.height)
+    };
+  }
+  cvs.onmousemove = e => {
+    const p = getCanvasXY(e.clientX, e.clientY);
+    sMx = p.x; sMy = p.y;
   };
   cvs.onmouseleave = () => { sMx = -999; sMy = -999; sAuto = true; sHover = -1; };
+  // 手机触控
+  cvs.ontouchmove = e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    const p = getCanvasXY(t.clientX, t.clientY);
+    sMx = p.x; sMy = p.y;
+  };
+  cvs.ontouchend = () => { sMx = -999; sMy = -999; sAuto = true; sHover = -1; };
   cvs.onclick = () => {
     if (sHover >= 0 && sHover < sCache.length) {
       const p = sCache[sHover];
