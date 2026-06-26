@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3)",
+      "Bash(winget install *)",
+      "Bash(where gh *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git rm *)",
+      "Bash(mkdir docs *)",
+      "Bash(cp index.html docs/)",
+      "Bash(cp yearbook.html docs/)",
+      "Bash(rm -rf docs/)",
+      "Bash(cp public/index.html docs/)",
+      "Bash(cp public/yearbook.html docs/)"
+    ]
+  }
+}

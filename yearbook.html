@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ 青春纪念册</title>
+<style>
+/* ============================================ */
+/*  变量 & 基础                                   */
+/* ============================================ */
+:root {
+  --pink:      #e892a8;
+  --pink-soft: #fce4ec;
+  --purple:    #b8a2e8;
+  --purple-soft:#ede4f6;
+  --cream:     #fff8f5;
+  --text:      #4a3f52;
+  --text-light:#8a7f92;
+  --white:     #ffffff;
+  --card-bg:   rgba(255,255,255,0.78);
+  --shadow:    0 4px 24px rgba(180,140,160,0.12);
+  --shadow-lg: 0 12px 40px rgba(180,140,160,0.18);
+  --radius:    20px;
+  --radius-sm: 12px;
+  --transition: 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: "PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
+  background: linear-gradient(160deg, #fef5f8 0%, #faf0f8 30%, #f5f0fd 60%, #fef9f6 100%);
+  color: var(--text); min-height:100vh; line-height:1.6; overflow-x:hidden;
+}
+
+/* ============================================ */
+/*  背景装饰                                     */
+/* ============================================ */
+.bg-stars { position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden; }
+.star {
+  position:absolute;font-size:16px;
+  animation:floatStar 6s ease-in-out infinite;opacity:0.45;
+}
+.star:nth-child(1){top:6%;left:5%;animation-delay:0s;font-size:20px}
+.star:nth-child(2){top:10%;left:86%;animation-delay:1.2s;font-size:15px}
+.star:nth-child(3){top:42%;left:91%;animation-delay:2.4s;font-size:18px}
+.star:nth-child(4){top:68%;left:7%;animation-delay:3.6s;font-size:14px}
+.star:nth-child(5){top:80%;left:76%;animation-delay:4.8s;font-size:22px}
+.star:nth-child(6){top:20%;left:44%;animation-delay:1.8s;font-size:14px}
+.star:nth-child(7){top:55%;left:52%;animation-delay:3.0s;font-size:17px}
+.star:nth-child(8){top:88%;left:32%;animation-delay:5.2s;font-size:19px}
+@keyframes floatStar {
+  0%,100%{transform:translateY(0)rotate(0deg)scale(1)}
+  33%{transform:translateY(-16px)rotate(10deg)scale(1.12)}
+  66%{transform:translateY(7px)rotate(-6deg)scale(0.93)}
+}
+.glow-1,.glow-2{position:fixed;border-radius:50%;filter:blur(130px);opacity:0.28;pointer-events:none;z-index:0}
+.glow-1{width:500px;height:500px;background:radial-gradient(circle,#fdd4e0 0%,transparent 70%);top:-120px;left:-80px}
+.glow-2{width:420px;height:420px;background:radial-gradient(circle,#dcd0f8 0%,transparent 70%);bottom:-100px;right:-60px}
+
+/* ============================================ */
+/*  主容器                                       */
+/* ============================================ */
+.container{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:24px 20px 60px}
+
+/* ============================================ */
+/*  导航栏                                       */
+/* ============================================ */
+.navbar {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;margin-bottom:28px;
+  background:var(--card-bg);backdrop-filter:blur(20px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  flex-wrap:wrap;gap:12px;
+}
+.nav-title {
+  font-size:20px;font-weight:700;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.nav-user{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-light)}
+.nav-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink-soft),var(--purple-soft));
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.btn{
+  padding:8px 20px;border-radius:24px;border:none;
+  font-size:13.5px;font-weight:600;cursor:pointer;
+  transition:all var(--transition);font-family:inherit;
+}
+.btn-outline{background:transparent;color:var(--purple);border:1.5px solid var(--purple)}
+.btn-outline:hover{background:var(--purple-soft)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  color:#fff;box-shadow:0 4px 14px rgba(200,140,170,0.3);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(200,140,170,0.4)}
+.btn-back{background:transparent;color:var(--text-light);border:1.5px solid #e0d8e8}
+.btn-back:hover{background:#f5f0f8}
+
+/* ============================================ */
+/*  登录页                                       */
+/* ============================================ */
+.login-card{
+  background:var(--card-bg);backdrop-filter:blur(20px);
+  border-radius:var(--radius);box-shadow:var(--shadow-lg);
+  padding:44px 40px;max-width:560px;margin:40px auto;text-align:center;
+}
+.login-card h2{
+  font-size:26px;margin-bottom:6px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.login-sub{font-size:14px;color:var(--text-light);margin-bottom:28px}
+
+.login-form{text-align:left;margin-bottom:10px}
+.login-form label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;color:var(--text)}
+.login-form input,.login-form select{
+  width:100%;padding:12px 16px;border-radius:24px;
+  border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;
+  outline:none;margin-bottom:14px;transition:border var(--transition);
+}
+.login-form input:focus,.login-form select:focus{border-color:var(--purple)}
+.form-row{display:flex;gap:10px}
+.form-row>*{flex:1}
+
+.divider{
+  display:flex;align-items:center;gap:14px;margin:24px 0;
+  color:var(--text-light);font-size:12px;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e8e0ec}
+
+.existing-list{display:flex;flex-direction:column;gap:8px}
+.existing-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-radius:var(--radius-sm);
+  background:rgba(255,255,255,0.6);border:1.5px solid transparent;
+  cursor:pointer;transition:all var(--transition);text-align:left;
+}
+.existing-item:hover{border-color:var(--pink);background:var(--pink-soft);transform:translateX(4px)}
+.existing-item .ei-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink-soft),var(--purple-soft));
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+}
+.existing-item .ei-name{font-weight:600;font-size:14px}
+.existing-item .ei-class{font-size:12px;color:var(--text-light)}
+
+/* ============================================ */
+/*  大厅 — 透明水晶球 + 背景照片                  */
+/* ============================================ */
+.hall-scene{
+  position:relative;width:100%;max-width:700px;margin:0 auto;
+  aspect-ratio:1/1;overflow:hidden;
+}
+/* 背景照片层 */
+.hall-photos{position:absolute;inset:0;z-index:0}
+.hall-photo{
+  position:absolute;inset:0;opacity:0;transition:opacity 2.5s ease-in-out;
+  background-size:cover;background-position:center;
+  filter:blur(18px) brightness(0.75);
+}
+.hall-photo.on{opacity:1}
+.sphere-wrap{position:absolute;inset:0;z-index:1}
+.sphere-wrap canvas{display:block;width:100%;height:100%}
+.hall-hint{text-align:center;margin-top:14px;font-size:13px;color:var(--text-light);animation:hintPulse 3s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:0.45}50%{opacity:1}}
+
+/* 照片指示器 */
+.photo-indicator{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2}
+.photo-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.4);border:none;cursor:pointer;transition:all .3s;padding:0;box-shadow:0 0 6px rgba(0,0,0,0.15)}
+.photo-dot.on{background:rgba(255,255,255,0.95);box-shadow:0 0 10px rgba(255,255,255,0.5)}
+.photo-dot:hover{background:rgba(255,255,255,0.7)}
+
+/* ============================================ */
+/*  个人主页                                     */
+/* ============================================ */
+.profile-header{
+  background:var(--card-bg);backdrop-filter:blur(20px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:36px;text-align:center;margin-bottom:24px;
+}
+.ph-avatar{
+  width:88px;height:88px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink-soft),var(--purple-soft));
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;margin:0 auto 14px;
+}
+.ph-name{font-size:24px;font-weight:700}
+.ph-class{font-size:13px;color:var(--text-light)}
+.stats-row{display:flex;justify-content:center;gap:36px;margin-top:20px}
+.stat-item{text-align:center}
+.stat-num{
+  font-size:28px;font-weight:800;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.stat-label{font-size:12px;color:var(--text-light)}
+.review-list{display:flex;flex-direction:column;gap:14px}
+.review-card{
+  background:var(--card-bg);backdrop-filter:blur(16px);
+  border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:20px 24px;
+}
+.rc-author{font-size:13px;color:var(--text-light);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.rc-tag{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600}
+.rc-tag.anon{background:var(--purple-soft);color:var(--purple)}
+.rc-tag.open{background:#e8f5e9;color:#66bb6a}
+.rc-strengths,.rc-weaknesses{margin-top:8px}
+.rc-strengths .rc-label{font-size:12px;font-weight:700;color:var(--pink);margin-bottom:4px}
+.rc-weaknesses .rc-label{font-size:12px;font-weight:700;color:var(--purple);margin-bottom:4px}
+.rc-content{font-size:14px;color:var(--text);line-height:1.7}
+.rc-time{font-size:11px;color:#c0b8c8;margin-top:10px}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-light)}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px}
+
+/* ============================================ */
+/*  写评价弹窗                                   */
+/* ============================================ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(40,20,35,0.4);
+  backdrop-filter:blur(4px);z-index:100;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal{
+  background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-lg);
+  padding:36px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;
+  animation:modalIn 0.35s ease;
+}
+@keyframes modalIn{from{opacity:0;transform:translateY(30px)scale(0.95)}to{opacity:1;transform:translateY(0)scale(1)}}
+.modal h3{
+  font-size:20px;margin-bottom:6px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.modal .modal-target{font-size:13px;color:var(--text-light);margin-bottom:24px}
+.modal label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+.modal textarea{
+  width:100%;padding:14px;border-radius:var(--radius-sm);
+  border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;
+  resize:vertical;min-height:80px;outline:none;margin-bottom:16px;
+  transition:border var(--transition);
+}
+.modal textarea:focus{border-color:var(--purple)}
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;padding:12px 16px;
+  background:var(--purple-soft);border-radius:var(--radius-sm);
+}
+.toggle-label{font-size:13px;font-weight:600}
+.toggle-desc{font-size:11px;color:var(--text-light)}
+.toggle-switch{position:relative;width:48px;height:26px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;cursor:pointer;
+  background:#d0c8e0;border-radius:26px;transition:var(--transition);
+}
+.toggle-slider::before{
+  content:'';position:absolute;width:20px;height:20px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:var(--transition);
+}
+.toggle-switch input:checked+.toggle-slider{background:linear-gradient(135deg,var(--pink),var(--purple))}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(22px)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end}
+.btn-cancel{background:#f0ecf4;color:var(--text-light);padding:10px 24px;border-radius:24px;border:none;cursor:pointer;font-family:inherit;font-size:14px}
+.hidden{display:none!important}
+.text-center{text-align:center}
+.mt-16{margin-top:16px}
+.mb-16{margin-bottom:16px}
+
+/* ============================================ */
+/*  响应式                                       */
+/* ============================================ */
+@media(max-width:600px){
+  .login-card{padding:32px 20px}
+  .form-row{flex-direction:column}
+  .profile-header{padding:24px}
+  .stats-row{gap:20px}
+  .modal{padding:24px}
+  .navbar{padding:10px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- 背景 -->
+<div class="bg-stars">
+  <span class="star">✨</span><span class="star">🌟</span><span class="star">💫</span><span class="star">✨</span>
+  <span class="star">⭐</span><span class="star">💖</span><span class="star">✨</span><span class="star">🌟</span>
+</div>
+<div class="glow-1"></div><div class="glow-2"></div>
+
+<!-- 主容器 -->
+<div class="container" id="app">
+  <nav class="navbar" id="navbar">
+    <span class="nav-title">✨ 青春纪念册</span>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div class="nav-user" id="navUser" style="display:none">
+        <div class="nav-avatar" id="navAvatar"></div>
+        <span id="navName"></span>
+      </div>
+      <button class="btn btn-outline" id="btnSwitch" style="display:none" onclick="goLogin()">🔄 切换账号</button>
+    </div>
+  </nav>
+  <div id="view"></div>
+</div>
+
+<script>
+/* ============================================ */
+/*  数据层                                       */
+/* ============================================ */
+const STORE = 'yb_data_v2';
+
+const SEED = {
+  students:[
+    {id:'s1',name:'林小棠',cls:'高三(1)班',avatar:'🌸'},
+    {id:'s2',name:'陈星河',cls:'高三(1)班',avatar:'🌌'},
+    {id:'s3',name:'苏念晴',cls:'高三(2)班',avatar:'☀️'},
+    {id:'s4',name:'陆子轩',cls:'高三(2)班',avatar:'🦁'},
+    {id:'s5',name:'白雨霏',cls:'高三(3)班',avatar:'🦋'},
+    {id:'s6',name:'顾云深',cls:'高三(3)班',avatar:'🌿'},
+    {id:'s7',name:'沈清禾',cls:'高三(1)班',avatar:'🌙'},
+    {id:'s8',name:'赵一阳',cls:'高三(2)班',avatar:'🔥'},
+    {id:'s9',name:'周以安',cls:'高三(3)班',avatar:'🐳'},
+    {id:'s10',name:'许晚晴',cls:'高三(1)班',avatar:'🎀'},
+    {id:'s11',name:'唐小鱼',cls:'高三(2)班',avatar:'🐣'},
+    {id:'s12',name:'季深',cls:'高三(3)班',avatar:'🍃'},
+  ],
+  reviews:[
+    {id:'r1',targetId:'s1',authorId:'s2',strengths:'性格开朗，总是能带动班级气氛\n学习认真，笔记做得特别工整',weaknesses:'有时候话有点多，上课会被老师点名\n做决定时有点犹豫',isAnonymous:false,createdAt:'2026-06-20T10:30:00'},
+    {id:'r2',targetId:'s1',authorId:'s3',strengths:'对朋友特别真诚，乐于助人',weaknesses:'早上总是卡点到教室',isAnonymous:true,createdAt:'2026-06-21T14:20:00'},
+    {id:'r3',targetId:'s1',authorId:'s5',strengths:'画画很好看，板报每次都靠她',weaknesses:'有时候太在意别人的看法了',isAnonymous:false,createdAt:'2026-06-22T09:15:00'},
+    {id:'r4',targetId:'s2',authorId:'s1',strengths:'理科大神，数学题没有他不会的\n打球也厉害，校队主力',weaknesses:'文科作业经常忘交\n有点小骄傲',isAnonymous:false,createdAt:'2026-06-19T16:40:00'},
+    {id:'r5',targetId:'s2',authorId:'s4',strengths:'逻辑思维超强，讲题很清楚',weaknesses:'不太会安慰人',isAnonymous:true,createdAt:'2026-06-21T11:10:00'},
+    {id:'r6',targetId:'s3',authorId:'s1',strengths:'声音特别好听，唱歌比赛拿了奖\n做事特别有条理',weaknesses:'有时候过于追求完美，把自己搞得很累',isAnonymous:false,createdAt:'2026-06-20T08:45:00'},
+    {id:'r7',targetId:'s3',authorId:'s6',strengths:'温柔体贴，是很多人的知心姐姐',weaknesses:'不太会说拒绝',isAnonymous:true,createdAt:'2026-06-22T17:30:00'},
+    {id:'r8',targetId:'s4',authorId:'s2',strengths:'幽默风趣，班级段子手\n运动全能',weaknesses:'上课爱睡觉\n课桌总是最乱的',isAnonymous:false,createdAt:'2026-06-18T13:00:00'},
+    {id:'r9',targetId:'s4',authorId:'s3',strengths:'关键时刻很靠谱，有担当',weaknesses:'嘴巴太毒了，开玩笑没分寸',isAnonymous:true,createdAt:'2026-06-21T15:50:00'},
+    {id:'r10',targetId:'s5',authorId:'s4',strengths:'跳舞超棒，文艺汇演C位\n性格温柔从不发脾气',weaknesses:'太安静了，课堂上不敢发言',isAnonymous:false,createdAt:'2026-06-19T12:20:00'},
+    {id:'r11',targetId:'s5',authorId:'s1',strengths:'细心，总能注意到别人忽略的细节',weaknesses:'容易紧张，考试前会失眠',isAnonymous:true,createdAt:'2026-06-22T20:05:00'},
+    {id:'r12',targetId:'s6',authorId:'s2',strengths:'文笔很好，作文经常被当范文\n知识面广，什么话题都能聊',weaknesses:'体育课能躲就躲\n有点拖延症',isAnonymous:false,createdAt:'2026-06-20T18:30:00'},
+    {id:'r13',targetId:'s6',authorId:'s5',strengths:'很善良，默默帮助别人不求回报',weaknesses:'话太少，有时候让人猜不透在想什么',isAnonymous:true,createdAt:'2026-06-22T10:40:00'},
+  ]
+};
+
+function ld(){try{const r=localStorage.getItem(STORE);if(r)return JSON.parse(r)}catch(e){}saveData(SEED);return JSON.parse(JSON.stringify(SEED))}
+function saveData(d){localStorage.setItem(STORE,JSON.stringify(d))}
+function gs(id){return data.students.find(s=>s.id===id)}
+function grs(tid){return data.reviews.filter(r=>r.targetId===tid).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))}
+function gid(p){return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+let data = ld();
+let me = null;          // 当前登录用户
+let view = 'login';     // 'login' | 'hall' | 'profile'
+let viewing = null;     // 正在查看的学生
+
+// 恢复登录
+try{
+  const uid = sessionStorage.getItem('yb_user');
+  if(uid){me=gs(uid)||null;if(me)view='hall'}
+}catch(e){}
+
+/* ============================================ */
+/*  渲染入口                                     */
+/* ============================================ */
+function render(){
+  endSphere();endPhotoBg();
+  updateNav();
+  if(view==='login')renderLogin();
+  else if(view==='hall')renderHall();
+  else if(view==='profile')renderProfile();
+}
+
+function updateNav(){
+  const u=document.getElementById('navUser');
+  const b=document.getElementById('btnSwitch');
+  if(me){u.style.display='flex';document.getElementById('navAvatar').textContent=me.avatar;document.getElementById('navName').textContent=me.name;b.style.display=''}
+  else{u.style.display='none';b.style.display='none'}
+}
+
+/* ============================================ */
+/*  登录页                                       */
+/* ============================================ */
+function renderLogin(){
+  document.getElementById('view').innerHTML=`
+    <div class="login-card">
+      <h2>✨ 青春纪念册</h2>
+      <p class="login-sub">创建你的身份，加入我们的星空</p>
+      <div class="login-form">
+        <label>你的名字</label>
+        <input type="text" id="regName" placeholder="输入你的名字" maxlength="8">
+        <label>班级</label>
+        <div class="form-row">
+          <select id="regClass">
+            <option>高三(1)班</option><option>高三(2)班</option><option>高三(3)班</option>
+            <option>高三(4)班</option><option>高三(5)班</option>
+          </select>
+          <select id="regAvatar">
+            <option>🌸</option><option>🌟</option><option>🦋</option><option>🌙</option>
+            <option>🎀</option><option>🍀</option><option>🐣</option><option>🦊</option>
+            <option>🐰</option><option>🌻</option><option>💎</option><option>🎵</option>
+            <option>🔥</option><option>⚡</option><option>🌈</option><option>🍭</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doRegister()">🚀 加入纪念册</button>
+      </div>
+      <div class="divider">或者，选择已有身份登录</div>
+      <div class="existing-list" id="existingList"></div>
+    </div>
+  `;
+  const el=document.getElementById('existingList');
+  el.innerHTML=data.students.map(s=>`
+    <div class="existing-item" onclick="doLogin('${s.id}')">
+      <div class="ei-avatar">${s.avatar}</div>
+      <div style="flex:1"><div class="ei-name">${s.name}</div><div class="ei-class">${s.cls}</div></div>
+      <span style="color:#c0b8c8">→</span>
+    </div>
+  `).join('');
+  // 回车快速注册
+  document.getElementById('regName').onkeydown=e=>{if(e.key==='Enter')doRegister()};
+}
+
+function doRegister(){
+  const n=document.getElementById('regName').value.trim();
+  if(!n){document.getElementById('regName').focus();return}
+  const s={
+    id:gid('s'),name:n,
+    cls:document.getElementById('regClass').value,
+    avatar:document.getElementById('regAvatar').value,
+    createdAt:new Date().toISOString()
+  };
+  data.students.push(s);saveData(data);
+  doLogin(s.id);
+}
+
+function doLogin(sid){
+  me=gs(sid);sessionStorage.setItem('yb_user',sid);
+  view='hall';viewing=null;render();
+}
+
+function goLogin(){me=null;view='login';viewing=null;sessionStorage.removeItem('yb_user');render()}
+
+/* ============================================ */
+/*  大厅 — 3D 星球                              */
+/* ============================================ */
+function renderHall(){
+  document.getElementById('view').innerHTML=`
+    <div class="section-title text-center" style="font-size:18px;font-weight:700;margin-bottom:16px">🌌 我们的星空</div>
+    <div class="hall-scene" id="hallScene">
+      <div class="hall-photos" id="hallPhotos"></div>
+      <div class="sphere-wrap" id="sphereWrap">
+        <canvas id="sphereCvs"></canvas>
+      </div>
+    </div>
+    <p class="hall-hint">✨ 鼠标悬停头像星球会停下，点击进入 TA 的主页</p>
+  `;
+  // 初始化背景照片
+  initPhotoBg();
+  // 初始化球体
+  requestAnimationFrame(()=>requestAnimationFrame(()=>initSphere()));
+}
+
+/* ---- 星球引擎 ---- */
+let sRAF=null,sRotY=0,sRotX=0.35,sAuto=true,sHover=-1,sMx=0,sMy=0,sPts=[],sCache=[];
+
+function endSphere(){if(sRAF){cancelAnimationFrame(sRAF);sRAF=null}sHover=-1;sAuto=true}
+
+function initSphere(){
+  endSphere();endPhotoBg();
+  const wrap=document.getElementById('sphereWrap');
+  const cvs=document.getElementById('sphereCvs');
+  if(!wrap||!cvs)return;
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const rect=wrap.getBoundingClientRect();
+  const S=rect.width;
+  cvs.width=S*dpr;cvs.height=S*dpr;
+  cvs.style.width=S+'px';cvs.style.height=S+'px';
+
+  const n=data.students.length;
+  const R=S*0.35;
+  const phi=Math.PI*(3-Math.sqrt(5));
+
+  sPts=data.students.map((s,i)=>{
+    let y,ry,th;
+    if(n===1){y=0;ry=1;th=0}
+    // 避开南北极（y 限制在 -0.85 ~ 0.85），让所有头像都能转动
+    else{y=0.85-(i/(n-1))*1.7;ry=Math.sqrt(1-y*y);th=phi*i}
+    return{student:s,bx:Math.cos(th)*ry*R,by:y*R,bz:Math.sin(th)*ry*R}
+  });
+
+  cvs.onmousemove=e=>{
+    const r=cvs.getBoundingClientRect();
+    sMx=(e.clientX-r.left)*(cvs.width/r.width);
+    sMy=(e.clientY-r.top)*(cvs.height/r.height);
+  };
+  cvs.onmouseleave=()=>{sMx=-999;sMy=-999;sAuto=true;sHover=-1};
+  cvs.onclick=()=>{
+    if(sHover>=0&&sHover<sCache.length){
+      const p=sCache[sHover];
+      if(p&&p.student)openProfile(p.student.id);
+    }
+  };
+
+  animateSphere(cvs,S,dpr);
+}
+
+/* ---- 照片背景 ---- */
+let _photoData={timer:null,idx:0,photos:[],container:null,dots:null};
+
+function switchToPhoto(n){
+  const d=_photoData;
+  if(!d.container||!d.photos.length)return;
+  const all=d.container.children;
+  if(!all[d.idx])return;
+  all[d.idx].classList.remove('on');
+  if(d.dots&&d.dots[d.idx])d.dots[d.idx].classList.remove('on');
+  d.idx=((n%d.photos.length)+d.photos.length)%d.photos.length;
+  all[d.idx].classList.add('on');
+  if(d.dots&&d.dots[d.idx])d.dots[d.idx].classList.add('on');
+  // 重置自动切换计时器
+  clearInterval(d.timer);
+  d.timer=setInterval(()=>switchToPhoto(d.idx+1),3000);
+}
+
+function initPhotoBg(){
+  const d=_photoData;
+  clearInterval(d.timer);
+  const container=document.getElementById('hallPhotos');
+  if(!container)return;
+  d.container=container;
+  d.photos=[
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRUjF3MW4ySkpxRVEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRVTF3MW5TZWxpRVEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRVjF3MW5MVTFYRVEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRZk5JVm1ST0F6S0EhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRaVVZVm1PNWNTQmchIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRb1VZVm1uWGo3QlEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRRcFVZVm14NEwxQlEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRTV0RzZG1TZWxFR2chIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRUVndIQm5zYypwSmchIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRUWSpERm5TRDViSFEhIQUAcXVuZ3o!.jpeg',
+    'NR8AVjViQ1FBM01UQXdOREk0TkRUcypERm5xcm9vRXchIQUAcXVuZ3o!.jpeg',
+  ];
+  const base='photos/群相册/';
+  container.innerHTML=d.photos.map((f,i)=>`<div class="hall-photo${i===0?' on':''}" style="background-image:url(${base}${encodeURI(f)})"></div>`).join('');
+
+  // 创建指示器圆点
+  const scene=document.getElementById('hallScene');
+  let dotsEl=document.getElementById('photoDots');
+  if(!dotsEl){
+    dotsEl=document.createElement('div');
+    dotsEl.id='photoDots';
+    dotsEl.className='photo-indicator';
+    scene.appendChild(dotsEl);
+  }
+  dotsEl.innerHTML=d.photos.map((_,i)=>`<button class="photo-dot${i===0?' on':''}" data-pi="${i}" aria-label="照片${i+1}"></button>`).join('');
+  d.dots=dotsEl.children;
+  // 圆点点击事件
+  dotsEl.addEventListener('click',e=>{
+    const btn=e.target.closest('.photo-dot');
+    if(!btn)return;
+    const n=parseInt(btn.dataset.pi);
+    if(!isNaN(n))switchToPhoto(n);
+  });
+
+  d.idx=0;
+  d.timer=setInterval(()=>switchToPhoto(d.idx+1),3000);
+}
+
+function endPhotoBg(){
+  clearInterval(_photoData.timer);_photoData.timer=null;
+}
+
+/* ---- 离开大厅时清理照片计时器（在 doNavigate 中调用） ---- */
+
+/* ---- 动画循环 ---- */
+function animateSphere(cvs,S,dpr){
+  const ctx=cvs.getContext('2d');
+  const W=cvs.width,H=cvs.height,cx=W/2,cy=H/2,P=S*0.8;
+
+  if(sAuto)sRotY+=0.003;
+
+  // 透明背景 — 让 CSS 照片层透过来
+  ctx.clearRect(0,0,W,H);
+
+  // ---- 旋转投影 ----
+  const cY=Math.cos(sRotY),sY=Math.sin(sRotY);
+  const cX=Math.cos(sRotX),sX=Math.sin(sRotX);
+  function rot(bx,by,bz){
+    const rx=bx*cY-bz*sY,rz=bx*sY+bz*cY;
+    return{x:rx,y:by*cX-rz*sX,z:by*sX+rz*cX};
+  }
+
+  sCache=sPts.map(pt=>{
+    const r=rot(pt.bx,pt.by,pt.bz);
+    const sc=P/(P+r.z);
+    return{student:pt.student,sx:cx+r.x*sc,sy:cy+r.y*sc,depth:r.z,scale:sc};
+  });
+
+  sCache.sort((a,b)=>a.depth-b.depth);
+
+  // ---- 悬停检测 ----
+  sHover=-1;
+  for(let i=sCache.length-1;i>=0;i--){
+    const p=sCache[i];
+    if(Math.hypot(sMx-p.sx,sMy-p.sy)<28*p.scale){sHover=i;sAuto=false;break}
+  }
+  if(sHover<0)sAuto=true;
+
+  // ---- 绘制人物 ----
+  sCache.forEach((p,i)=>{
+    const hov=i===sHover;
+    const r=(hov?38:23)*p.scale;
+    const isMe=me&&p.student.id===me.id;
+
+    // 悬停发光
+    if(hov){
+      const gl=ctx.createRadialGradient(p.sx,p.sy,r*0.2,p.sx,p.sy,r*2.8);
+      gl.addColorStop(0,'rgba(255,200,220,0.5)');
+      gl.addColorStop(0.5,'rgba(200,170,215,0.12)');
+      gl.addColorStop(1,'rgba(150,130,180,0)');
+      ctx.fillStyle=gl;ctx.beginPath();ctx.arc(p.sx,p.sy,r*2.8,0,Math.PI*2);ctx.fill();
+    }
+
+    // 头像圆 — 柔和半透明
+    const ag=ctx.createRadialGradient(p.sx-r*0.15,p.sy-r*0.2,r*0.04,p.sx,p.sy,r);
+    if(isMe){
+      ag.addColorStop(0,'rgba(255,245,248,0.92)');
+      ag.addColorStop(0.7,'rgba(255,205,225,0.7)');
+      ag.addColorStop(1,'rgba(220,170,200,0.45)');
+    }else if(hov){
+      ag.addColorStop(0,'rgba(255,255,255,0.9)');
+      ag.addColorStop(0.7,'rgba(240,215,230,0.65)');
+      ag.addColorStop(1,'rgba(190,160,200,0.4)');
+    }else{
+      ag.addColorStop(0,'rgba(255,255,255,0.72)');
+      ag.addColorStop(0.7,'rgba(235,215,228,0.48)');
+      ag.addColorStop(1,'rgba(180,150,190,0.25)');
+    }
+    ctx.fillStyle=ag;ctx.beginPath();ctx.arc(p.sx,p.sy,r,0,Math.PI*2);ctx.fill();
+
+    // 边框
+    if(isMe){
+      ctx.strokeStyle='rgba(255,180,200,0.65)';ctx.lineWidth=2;
+    }else if(hov){
+      ctx.strokeStyle='rgba(255,255,255,0.65)';ctx.lineWidth=2;
+    }else{
+      ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=0.7;
+    }
+    ctx.stroke();
+
+    // emoji
+    ctx.font=`${r*1.0}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(p.student.avatar,p.sx,p.sy+1);
+
+    // 自己标识
+    if(isMe&&!hov){
+      ctx.fillStyle='rgba(255,255,255,0.65)';
+      ctx.font=`bold ${9*p.scale}px "PingFang SC","Microsoft YaHei",sans-serif`;
+      ctx.fillText('我',p.sx,p.sy+r+11);
+    }
+
+    // 悬停标签
+    if(hov){
+      const ny=p.sy+r+16;
+      const cnt=data.reviews.filter(rv=>rv.targetId===p.student.id).length;
+      const label=isMe?`${p.student.name}（我）· ${cnt}条评价`:p.student.name;
+      const m=ctx.measureText(label);
+      const tw=m.width+24;const th=34;
+      const bx=p.sx-tw/2,by=ny-11;
+
+      ctx.fillStyle='rgba(0,0,0,0.55)';
+      ctx.beginPath();
+      ctx.moveTo(bx+10,by);ctx.lineTo(bx+tw-10,by);
+      ctx.quadraticCurveTo(bx+tw,by,bx+tw,by+10);
+      ctx.lineTo(bx+tw,by+th-10);
+      ctx.quadraticCurveTo(bx+tw,by+th,bx+tw-10,by+th);
+      ctx.lineTo(bx+10,by+th);
+      ctx.quadraticCurveTo(bx,by+th,bx,by+th-10);
+      ctx.lineTo(bx,by+10);
+      ctx.quadraticCurveTo(bx,by,bx+10,by);
+      ctx.fill();
+
+      ctx.fillStyle='#fff';
+      ctx.font=`bold 12.5px "PingFang SC","Microsoft YaHei",sans-serif`;
+      ctx.fillText(label,p.sx,ny+2);
+      ctx.fillStyle='rgba(255,255,255,0.5)';
+      ctx.font=`10px "PingFang SC","Microsoft YaHei",sans-serif`;
+      ctx.fillText(p.student.cls,p.sx,ny+16);
+    }
+  });
+
+  sRAF=requestAnimationFrame(()=>animateSphere(cvs,S,dpr));
+}
+
+window.addEventListener('resize',()=>{
+  clearTimeout(window._rt);
+  window._rt=setTimeout(()=>{if(view==='hall')initSphere()},300);
+});
+
+/* ============================================ */
+/*  个人主页                                     */
+/* ============================================ */
+function openProfile(sid){
+  viewing=gs(sid);view='profile';render();
+}
+
+function renderProfile(){
+  const s=viewing;
+  const rvs=grs(s.id);
+  const sc=rvs.reduce((sm,r)=>sm+(r.strengths?r.strengths.split('\n').filter(l=>l.trim()).length:0),0);
+  const wc=rvs.reduce((sm,r)=>sm+(r.weaknesses?r.weaknesses.split('\n').filter(l=>l.trim()).length:0),0);
+  const isMe=me&&me.id===s.id;
+
+  let rvHTML='';
+  if(rvs.length===0){
+    rvHTML=`<div class="empty-state"><div class="empty-icon">📝</div><p>还没有人给 TA 写评价</p><p style="font-size:12px">来做第一个吧 ✨</p></div>`;
+  }else{
+    rvHTML=rvs.map(r=>{
+      const au=gs(r.authorId);
+      const an=r.isAnonymous?'匿名同学':(au?au.name:'未知');
+      const tag=r.isAnonymous?'<span class="rc-tag anon">🔒 匿名</span>':'<span class="rc-tag open">📢 公开身份</span>';
+      const t=new Date(r.createdAt).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      return `<div class="review-card">
+        <div class="rc-author"><span>${au?au.avatar:'💬'} <strong>${an}</strong></span>${tag}</div>
+        ${r.strengths?`<div class="rc-strengths"><div class="rc-label">✨ 优点</div><div class="rc-content">${r.strengths.replace(/\n/g,'<br>')}</div></div>`:''}
+        ${r.weaknesses?`<div class="rc-weaknesses"><div class="rc-label">💡 可以更好的地方</div><div class="rc-content">${r.weaknesses.replace(/\n/g,'<br>')}</div></div>`:''}
+        <div class="rc-time">${t}</div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('view').innerHTML=`
+    <button class="btn btn-back mb-16" onclick="backToHall()">← 返回大厅</button>
+    <div class="profile-header">
+      <div class="ph-avatar">${s.avatar}</div>
+      <div class="ph-name">${s.name}${isMe?'（我）':''}</div>
+      <div class="ph-class">${s.cls}</div>
+      <div class="stats-row">
+        <div class="stat-item"><div class="stat-num">${sc}</div><div class="stat-label">✨ 优点</div></div>
+        <div class="stat-item"><div class="stat-num">${wc}</div><div class="stat-label">💡 待改进</div></div>
+        <div class="stat-item"><div class="stat-num">${rvs.length}</div><div class="stat-label">📝 总评价</div></div>
+      </div>
+      ${me&&!isMe?`<div class="mt-16"><button class="btn btn-primary" onclick="openWrite()">✍️ 给 ${s.name} 写评价</button></div>`:''}
+      ${isMe?`<p class="mt-16" style="font-size:12px;color:var(--text-light)">这是你的主页，大家给你的评价会显示在这里</p>`:''}
+    </div>
+    <div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:16px">📝 TA 收到的评价</div>
+    <div class="review-list">${rvHTML}</div>
+  `;
+}
+
+function backToHall(){viewing=null;view='hall';render()}
+
+/* ============================================ */
+/*  写评价                                       */
+/* ============================================ */
+function openWrite(){
+  const s=viewing;if(!me||me.id===s.id)return;
+  const old=document.querySelector('.modal-overlay');if(old)old.remove();
+
+  const overlay=document.createElement('div');overlay.className='modal-overlay';
+  overlay.innerHTML=`
+    <div class="modal">
+      <h3>✍️ 给 ${s.name} 写评价</h3>
+      <p class="modal-target">${s.avatar} ${s.name} · ${s.cls}</p>
+      <label>✨ 优点</label>
+      <textarea id="rvStr" placeholder="TA 有哪些让你欣赏的地方？每行写一条~"></textarea>
+      <label>💡 可以更好的地方</label>
+      <textarea id="rvWeak" placeholder="你觉得 TA 还有哪些可以进步的地方？友善地提出建议~"></textarea>
+      <div class="toggle-row">
+        <div><div class="toggle-label">🔒 匿名评价</div><div class="toggle-desc">开启后，TA 不会知道是你写的</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="rvAnon" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-cancel" id="rvCancel">取消</button>
+        <button class="btn btn-primary" id="rvSubmit">💌 提交</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#rvCancel').onclick=()=>overlay.remove();
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+  overlay.querySelector('#rvSubmit').onclick=()=>{
+    const st=overlay.querySelector('#rvStr').value.trim();
+    const wk=overlay.querySelector('#rvWeak').value.trim();
+    if(!st&&!wk){overlay.querySelector('#rvStr').focus();return}
+    data.reviews.push({
+      id:gid('r'),targetId:s.id,authorId:me.id,
+      strengths:st,weaknesses:wk,
+      isAnonymous:overlay.querySelector('#rvAnon').checked,
+      createdAt:new Date().toISOString()
+    });
+    saveData(data);overlay.remove();render();
+  };
+}
+
+/* ============================================ */
+/*  启动                                         */
+/* ============================================ */
+render();
+</script>
+</body>
+</html>
