@@ -633,7 +633,12 @@ async function doRegister() {
       return;
     }
 
-    // 2. 在 students 表中创建记录
+    // 2. 确保 session 生效
+    if (authData.session) {
+      await sb.auth.setSession(authData.session);
+    }
+
+    // 3. 在 students 表中创建记录
     const { data: student, error: insertError } = await sb.from('students')
       .insert({ auth_id: authData.user.id, name, cls, avatar })
       .select().single();
