@@ -1,0 +1,7 @@
+{
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "routes": [
+    { "src": "/", "dest": "/yearbook.html" }
+  ]
+}

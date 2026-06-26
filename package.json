@@ -1,0 +1,9 @@
+{
+  "name": "yearbook",
+  "version": "1.0.0",
+  "description": "青春纪念册 - 高中同学录",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve public"
+  }
+}
