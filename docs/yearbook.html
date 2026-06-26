@@ -317,6 +317,7 @@ body {
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
 
 <script>
 /* ============================================ */
@@ -994,34 +995,56 @@ function openWrite() {
 /*  启动 — 恢复 Session                         */
 /* ============================================ */
 async function init() {
-  // 1. 尝试恢复登录 session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    const { data: student, error } = await supabase.from('students')
-      .select('*').eq('auth_id', session.user.id).single();
-    if (student && !error) {
-      me = student;
-      view = 'hall';
-    }
+  // 检查 SDK 是否加载
+  if (typeof supabase === 'undefined' || !supabase.from) {
+    document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">🔌</div><p>SDK 加载失败</p><p style="font-size:12px">请检查网络连接后刷新页面</p></div>';
+    return;
   }
 
-  // 2. 监听 auth 状态变化（其他标签页登录/登出）
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_OUT') {
-      me = null; view = 'login'; viewing = null;
-      await render();
-    } else if (event === 'SIGNED_IN' && session) {
-      const { data: student } = await supabase.from('students')
+  try {
+    // 1. 尝试恢复登录 session (添加超时)
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+
+    let session;
+    try {
+      const result = await Promise.race([sessionPromise, timeoutPromise]);
+      session = result.data.session;
+    } catch (e) {
+      document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>连接服务器超时</p><p style="font-size:12px">请检查网络或刷新重试</p></div>';
+      return;
+    }
+
+    if (session) {
+      const { data: student, error } = await supabase.from('students')
         .select('*').eq('auth_id', session.user.id).single();
-      if (student) {
-        me = student; view = 'hall'; viewing = null;
-        await render();
+      if (student && !error) {
+        me = student;
+        view = 'hall';
       }
     }
-  });
 
-  // 3. 首次渲染
-  await render();
+    // 2. 监听 auth 状态变化
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        me = null; view = 'login'; viewing = null;
+        await render();
+      } else if (event === 'SIGNED_IN' && session) {
+        const { data: student } = await supabase.from('students')
+          .select('*').eq('auth_id', session.user.id).single();
+        if (student) {
+          me = student; view = 'hall'; viewing = null;
+          await render();
+        }
+      }
+    });
+
+    // 3. 首次渲染
+    await render();
+  } catch (e) {
+    console.error('Init error:', e);
+    document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><p>初始化失败</p><p style="font-size:12px">请刷新页面重试</p></div>';
+  }
 }
 
 init();
