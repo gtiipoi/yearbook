@@ -315,9 +315,8 @@ body {
   <div id="view"><div class="loading">加载中</div></div>
 </div>
 
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script>if(!window.supabase){document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');}</script>
+<!-- Supabase SDK (本地文件) -->
+<script src="supabase.min.js"></script>
 
 <script>
 /* ============================================ */
@@ -325,6 +324,7 @@ body {
 /* ============================================ */
 const SUPABASE_URL = 'https://sxjrmlylgcadzfitascx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT';
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 本地照片路径（部署到 Vercel 前需上传至 Supabase Storage）
