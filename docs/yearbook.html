@@ -349,6 +349,7 @@ body {
 @keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
 .online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
 .dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+.dm-inbox-item:hover{background:rgba(255,255,255,0.9)!important;transform:translateX(4px)}
 
 /* ============================================ */
 /*  聊天室                                       */
@@ -384,6 +385,7 @@ body {
 @keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
 .online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
 .dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+.dm-inbox-item:hover{background:rgba(255,255,255,0.9)!important;transform:translateX(4px)}
 
 /* ============================================ */
 /*  聊天室                                       */
@@ -419,6 +421,7 @@ body {
 @keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
 .online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
 .dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+.dm-inbox-item:hover{background:rgba(255,255,255,0.9)!important;transform:translateX(4px)}
 
 /* ============================================ */
 /*  响应式                                       */
@@ -1384,7 +1387,7 @@ async function renderProfile() {
         <div class="stat-item"><div class="stat-num">${wc}</div><div class="stat-label">💡 待改进</div></div>
         <div class="stat-item"><div class="stat-num">${rvs.length}</div><div class="stat-label">📝 总评价</div></div>
       </div>
-      ${me && !isMe ? `<div class="mt-16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWrite()">✍️ 写评价</button><button class="btn btn-outline" onclick="openDMChat('${s.id}')">💬 私聊</button></div>` : ''}
+      ${me && !isMe ? `<div class="mt-16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWrite()">✍️ 写评价</button><button class="btn btn-outline dm-chat-btn" data-dm-partner="${s.id}">💬 私聊</button></div>` : ''}
       ${isMe ? `<p class="mt-16" style="font-size:12px;color:var(--text-light)">这是你的主页，大家给你的评价会显示在这里</p>
       <button class="btn btn-outline mt-16" onclick="changePassword()" style="font-size:12px">🔑 修改密码</button>` : ''}
       ${s.is_seed ? `<p class="mt-16" style="font-size:11px;color:var(--text-light)">⚠️ 这是预置学生，不可登录。注册你自己的账号来写评价吧~</p>` : ''}
@@ -1528,7 +1531,7 @@ async function renderDMInbox() {
       var preview = (c.lastMsg.content || '').substring(0, 50);
       if (c.lastMsg.content && c.lastMsg.content.length > 50) preview += '...';
       var badge = c.unread > 0 ? '<span style="background:#ff4757;color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">' + c.unread + '</span>' : '';
-      html += '<div onclick="openDMChat(\'' + pid + '\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.75);border-radius:14px;cursor:pointer;transition:all 0.2s;' + (c.unread > 0 ? 'border-left:3px solid #ff4757;' : '') + '" onmouseenter="this.style.background=\'rgba(255,255,255,0.9)\';this.style.transform=\'translateX(4px)\';" onmouseleave="this.style.background=\'rgba(255,255,255,0.75)\';this.style.transform=\'\'">'
+      html += '<div data-dm-partner="' + pid + '" class="dm-inbox-item" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.75);border-radius:14px;cursor:pointer;transition:all 0.2s;' + (c.unread > 0 ? 'border-left:3px solid #ff4757;' : '') + '">''
         + '<div style="width:40px;height:40px;border-radius:50%;background:' + colors[ci] + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0">' + s.name.charAt(s.name.length - 1) + '</div>'
         + '<div style="flex:1;min-width:0">'
         + '<div style="display:flex;align-items:center;justify-content:space-between">'
@@ -1616,8 +1619,17 @@ async function renderDMChat() {
     var content = input.value.trim();
     if (!content) return;
     input.value = '';
-    await sb.from('direct_messages').insert({ sender_id: me.id, receiver_id: partnerId, content: content, sender_name: me.name });
-    loadDMs();
+    input.disabled = true;
+    try {
+      var result = await sb.from('direct_messages').insert({ sender_id: me.id, receiver_id: partnerId, content: content, sender_name: me.name });
+      if (result.error) { console.error('DM send error:', result.error); input.value = content; }
+      else loadDMs();
+    } catch(e) {
+      console.error('DM send error:', e);
+      input.value = content; // 恢复输入
+    }
+    input.disabled = false;
+    input.focus();
   }
 
   document.getElementById('dmSend').onclick = sendDM;
@@ -2051,6 +2063,15 @@ async function init() {
 }
 
 document.getElementById('view').innerHTML = '<div class="loading">初始化中...</div>';
+// 全局点击委托：处理所有 data-dm-partner 的私聊按钮（兼容微信浏览器）
+document.getElementById('view').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-dm-partner]');
+  if (btn) {
+    e.preventDefault();
+    var pid = btn.getAttribute('data-dm-partner');
+    if (pid) openDMChat(pid);
+  }
+});
 init();
 </script>
 
