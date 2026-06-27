@@ -473,6 +473,7 @@ body {
       </div>
       <button class="btn btn-outline nav-badge" id="btnChat" style="display:none;margin-right:8px" onclick="goChat()">💬 聊天室</button>
       <button class="btn btn-outline" id="btnPhotos" style="display:none;margin-right:8px" onclick="goPhotos();return false;">📷 照片墙</button>
+      <button class="btn btn-outline nav-badge" id="btnDM" style="display:none;margin-right:8px" onclick="goDMInbox();return false;">📨 私信</button>
       <button class="btn btn-logout" id="btnLogout" style="display:none" onclick="doLogout();return false;">🚪 登出</button>
     </div>
   </nav>
@@ -560,19 +561,22 @@ async function getAllStudentIds() {
 /*  渲染入口                                      */
 /* ============================================ */
 async function render() {
-  endSphere(); endChat();
+  endSphere(); endChat(); endDM();
   updateNav();
   if (view === 'login') await renderLogin();
   else if (view === 'hall') await renderHall();
   else if (view === 'profile') await renderProfile();
   else if (view === 'photos') await renderPhotos();
   else if (view === 'chat') await renderChat();
+  else if (view === 'dm-inbox') await renderDMInbox();
+  else if (view === 'dm') await renderDMChat();
 }
 
 function updateNav() {
   const u = document.getElementById('navUser');
   const b = document.getElementById('btnLogout');
   const pb = document.getElementById('btnPhotos');
+  const db = document.getElementById('btnDM');
   const cb = document.getElementById('btnChat');
   // 隐藏安装按钮（已废弃）
   var ib = document.getElementById('btnInstallApp');
@@ -587,11 +591,13 @@ function updateNav() {
     document.getElementById('navName').textContent = me.name;
     b.style.display = '';
     if (pb) pb.style.display = '';
+    if (db) db.style.display = '';
     if (cb) cb.style.display = ''; checkUnreadDM();
   } else {
     u.style.display = 'none'; u.onclick = null;
     b.style.display = 'none';
     if (pb) pb.style.display = 'none';
+    if (db) db.style.display = 'none';
     if (cb) cb.style.display = 'none';
   }
 }
@@ -978,16 +984,28 @@ function stopPresence() {
 }
 async function checkUnreadDM() {
   if (!me) return;
-  var cb = document.getElementById('btnChat');
-  if (!cb) return;
   try {
     var resp = await sb.from('direct_messages').select('id', { count: 'exact', head: true }).eq('receiver_id', me.id).eq('read', false);
     var count = resp.count || 0;
-    if (count > 0) {
-      cb.style.position = 'relative';
-      cb.setAttribute('data-badge', count);
-    } else {
-      cb.removeAttribute('data-badge');
+    // 更新私信按钮角标
+    var db = document.getElementById('btnDM');
+    if (db) {
+      if (count > 0) {
+        db.style.position = 'relative';
+        db.setAttribute('data-badge', count);
+      } else {
+        db.removeAttribute('data-badge');
+      }
+    }
+    // 也更新旧聊天按钮
+    var cb = document.getElementById('btnChat');
+    if (cb) {
+      if (count > 0) {
+        cb.style.position = 'relative';
+        cb.setAttribute('data-badge', count);
+      } else {
+        cb.removeAttribute('data-badge');
+      }
     }
   } catch(e) {}
 }
@@ -1366,7 +1384,7 @@ async function renderProfile() {
         <div class="stat-item"><div class="stat-num">${wc}</div><div class="stat-label">💡 待改进</div></div>
         <div class="stat-item"><div class="stat-num">${rvs.length}</div><div class="stat-label">📝 总评价</div></div>
       </div>
-      ${me && !isMe ? `<div class="mt-16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWrite()">✍️ 写评价</button><a href="dm.html?with=${s.id}" class="btn btn-outline" style="text-decoration:none">💬 私聊</a></div>` : ''}
+      ${me && !isMe ? `<div class="mt-16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWrite()">✍️ 写评价</button><button class="btn btn-outline" onclick="openDMChat('${s.id}')">💬 私聊</button></div>` : ''}
       ${isMe ? `<p class="mt-16" style="font-size:12px;color:var(--text-light)">这是你的主页，大家给你的评价会显示在这里</p>
       <button class="btn btn-outline mt-16" onclick="changePassword()" style="font-size:12px">🔑 修改密码</button>` : ''}
       ${s.is_seed ? `<p class="mt-16" style="font-size:11px;color:var(--text-light)">⚠️ 这是预置学生，不可登录。注册你自己的账号来写评价吧~</p>` : ''}
@@ -1449,14 +1467,172 @@ async function deleteMedia(id) {
   loadMyMedia();
 }
 
+
+/* ============================================ */
+/*  私信收件箱                                    */
+/* ============================================ */
+let _dmPollTimer = null;
+let _dmInboxPartner = null;
+
+function endDM() {
+  if (_dmPollTimer) { clearInterval(_dmPollTimer); _dmPollTimer = null; }
+  _dmInboxPartner = null;
+}
+
+async function renderDMInbox() {
+  if (!me) { goGuestLogin(); return; }
+  endDM();
+  endChat();
+
+  // 获取所有涉及我的私信
+  var resp = await sb.from('direct_messages').select('*')
+    .or('sender_id.eq.' + me.id + ',receiver_id.eq.' + me.id)
+    .order('created_at', { ascending: false }).limit(200);
+
+  var msgs = resp.data || [];
+  // 按对话对象分组
+  var convos = {};
+  msgs.forEach(function(m) {
+    var partnerId = m.sender_id === me.id ? m.receiver_id : m.sender_id;
+    if (!convos[partnerId]) {
+      convos[partnerId] = { partnerId: partnerId, partnerName: m.sender_id === me.id ? null : m.sender_name, lastMsg: m, unread: 0 };
+    }
+    if (m.sender_id === partnerId && !m.read) convos[partnerId].unread++;
+    if (m.created_at > convos[partnerId].lastMsg.created_at) convos[partnerId].lastMsg = m;
+  });
+
+  // 获取对话对象的名字（对于对方发的消息sender_name可能不准确，需要查students表）
+  var partnerIds = Object.keys(convos);
+  var studentsMap = {};
+  if (partnerIds.length > 0) {
+    var sResp = await sb.from('students').select('id,name,avatar').in('id', partnerIds);
+    (sResp.data || []).forEach(function(s) { studentsMap[s.id] = s; });
+  }
+
+  var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
+  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="backToHall();return false;">← 返回大厅</a>'
+    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:16px">📨 我的私信</div>';
+
+  if (partnerIds.length === 0) {
+    html += '<div class="empty-state"><div class="empty-icon">📭</div><p>还没有私信</p><p style="font-size:12px;color:var(--text-light)">点击同学主页中的「💬 私聊」按钮发起对话</p></div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:8px">';
+    var sortedPartners = partnerIds.sort(function(a, b) {
+      return new Date(convos[b].lastMsg.created_at) - new Date(convos[a].lastMsg.created_at);
+    });
+    sortedPartners.forEach(function(pid) {
+      var c = convos[pid];
+      var s = studentsMap[pid] || { name: c.partnerName || '未知', avatar: '👤' };
+      var ci = (s.name || '?').charCodeAt(0) % colors.length;
+      var t = new Date(c.lastMsg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      var preview = (c.lastMsg.content || '').substring(0, 50);
+      if (c.lastMsg.content && c.lastMsg.content.length > 50) preview += '...';
+      var badge = c.unread > 0 ? '<span style="background:#ff4757;color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">' + c.unread + '</span>' : '';
+      html += '<div onclick="openDMChat(\'' + pid + '\')" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.75);border-radius:14px;cursor:pointer;transition:all 0.2s;' + (c.unread > 0 ? 'border-left:3px solid #ff4757;' : '') + '" onmouseenter="this.style.background=\'rgba(255,255,255,0.9)\';this.style.transform=\'translateX(4px)\';" onmouseleave="this.style.background=\'rgba(255,255,255,0.75)\';this.style.transform=\'\'">'
+        + '<div style="width:40px;height:40px;border-radius:50%;background:' + colors[ci] + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0">' + s.name.charAt(s.name.length - 1) + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between">'
+        + '<span style="font-weight:600;font-size:15px;color:var(--text)">' + s.name + badge + '</span>'
+        + '<span style="font-size:11px;color:#c0b8c8">' + t + '</span>'
+        + '</div>'
+        + '<div style="font-size:13px;color:#8a7f92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px">' + preview.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+        + '</div></div>';
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('view').innerHTML = html;
+  checkUnreadDM();
+}
+
+function openDMChat(partnerId) {
+  _dmInboxPartner = partnerId;
+  view = 'dm'; viewing = null;
+  render();
+}
+
+async function renderDMChat() {
+  if (!me) { goGuestLogin(); return; }
+  endDM();
+  endChat();
+
+  var partnerId = _dmInboxPartner;
+  if (!partnerId) { renderDMInbox(); return; }
+
+  var pResp = await sb.from('students').select('id,name,avatar').eq('id', partnerId).single();
+  var partner = pResp.data;
+  if (!partner) { renderDMInbox(); return; }
+
+  var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
+  var ci = partner.name.charCodeAt(0) % colors.length;
+
+  document.getElementById('view').innerHTML = ''
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    + '<a href="javascript:void(0)" onclick="goDMInbox();return false;" style="text-decoration:none;font-size:18px;color:var(--text-light)">←</a>'
+    + '<div style="width:30px;height:30px;border-radius:50%;background:' + colors[ci] + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">' + partner.name.charAt(partner.name.length - 1) + '</div>'
+    + '<span style="font-weight:600;font-size:15px">💬 ' + partner.name + '</span>'
+    + '</div>'
+    + '<div class="chat-box"><div class="chat-messages" id="dmMessages"><p style="text-align:center;color:#8a7f92;padding:20px">加载中...</p></div>'
+    + '<div class="chat-input-row"><input type="text" id="dmInput" placeholder="输入消息..." maxlength="500" autocomplete="off">'
+    + '<button id="dmSend">发送</button></div></div>';
+
+  async function loadDMs() {
+    var r = await sb.from('direct_messages').select('*')
+      .or('sender_id.eq.' + me.id + ',receiver_id.eq.' + me.id)
+      .order('created_at', { ascending: true }).limit(200);
+    var msgs = (r.data || []).filter(function(m) {
+      return (m.sender_id === me.id && m.receiver_id === partnerId) || (m.sender_id === partnerId && m.receiver_id === me.id);
+    });
+    // Mark unread as read
+    var unread = msgs.filter(function(m) { return m.sender_id === partnerId && !m.read; }).map(function(m) { return m.id; });
+    if (unread.length > 0) {
+      sb.from('direct_messages').update({ read: true }).in('id', unread).then(function() { checkUnreadDM(); });
+    }
+    var container = document.getElementById('dmMessages');
+    if (!container) return;
+    var html = '';
+    msgs.forEach(function(m) {
+      var isMe = m.sender_id === me.id;
+      var nm = isMe ? '我' : partner.name;
+      var cl = (nm || '?').charCodeAt(0) % colors.length;
+      var t = new Date(m.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      var rd = (isMe && m.read) ? ' <span style="font-size:10px;color:#4caf50">✓已读</span>' : '';
+      html += '<div class="chat-msg' + (isMe ? ' me' : '') + '">'
+        + '<div class="cm-avatar" style="background:' + colors[cl] + '">' + nm.charAt(nm.length - 1) + '</div>'
+        + '<div><div class="cm-name">' + nm + rd + '</div>'
+        + '<div class="cm-bubble">' + m.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>'
+        + '<div class="cm-time">' + t + '</div></div></div>';
+    });
+    container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，发一条吧 ✨</p>';
+    container.scrollTop = container.scrollHeight;
+  }
+
+  loadDMs();
+  _dmPollTimer = setInterval(loadDMs, 2000);
+
+  async function sendDM() {
+    var input = document.getElementById('dmInput');
+    if (!input) return;
+    var content = input.value.trim();
+    if (!content) return;
+    input.value = '';
+    await sb.from('direct_messages').insert({ sender_id: me.id, receiver_id: partnerId, content: content, sender_name: me.name });
+    loadDMs();
+  }
+
+  document.getElementById('dmSend').onclick = sendDM;
+  document.getElementById('dmInput').onkeydown = function(e) { if (e.key === 'Enter') sendDM(); };
+}
+
 function goChat() { viewing = null; view = 'chat'; render(); }
+function goDMInbox() { viewing = null; view = 'dm-inbox'; render(); }
 
 function goPhotos() { viewing = null; view = 'photos'; render(); }
 async function backToHall() { viewing = null; view = 'hall'; await render(); }
 
 async function openDM(partnerId, partnerName) {
   if (!me) return;
-  _dmPartner = { id: partnerId, name: partnerName };
+  _dmInboxPartner = partnerId;
   view = 'dm'; viewing = null;
   await render();
 }
