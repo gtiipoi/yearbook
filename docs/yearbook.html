@@ -1531,7 +1531,7 @@ async function renderDMInbox() {
       var preview = (c.lastMsg.content || '').substring(0, 50);
       if (c.lastMsg.content && c.lastMsg.content.length > 50) preview += '...';
       var badge = c.unread > 0 ? '<span style="background:#ff4757;color:#fff;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">' + c.unread + '</span>' : '';
-      html += '<div data-dm-partner="' + pid + '" class="dm-inbox-item" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.75);border-radius:14px;cursor:pointer;transition:all 0.2s;' + (c.unread > 0 ? 'border-left:3px solid #ff4757;' : '') + '">''
+      html += '<div data-dm-partner="' + pid + '" class="dm-inbox-item" style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.75);border-radius:14px;cursor:pointer;transition:all 0.2s;' + (c.unread > 0 ? 'border-left:3px solid #ff4757;' : '') + '">'
         + '<div style="width:40px;height:40px;border-radius:50%;background:' + colors[ci] + ';display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700;flex-shrink:0">' + s.name.charAt(s.name.length - 1) + '</div>'
         + '<div style="flex:1;min-width:0">'
         + '<div style="display:flex;align-items:center;justify-content:space-between">'

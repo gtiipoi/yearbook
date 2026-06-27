@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💬 私聊</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#fef5f8,#f5f0fd);min-height:100vh;padding:10px}
+h2{text-align:center;margin:10px 0;color:#4a3f52;font-size:18px}
+#messages{height:55vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg.me{flex-direction:row-reverse}
+.msg .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.msg .bub{max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;word-break:break-word}
+.msg:not(.me) .bub{background:#f5f0f8;border-bottom-left-radius:4px}
+.msg.me .bub{background:linear-gradient(135deg,#e892a8,#b8a2e8);color:#fff;border-bottom-right-radius:4px}
+.msg .nm{font-size:11px;color:#8a7f92;margin-bottom:2px}
+.msg .tm{font-size:10px;color:#c0b8c8;margin-top:2px;text-align:right}
+.msg .rd{font-size:10px;color:#4caf50}
+.input-row{display:flex;gap:8px;padding:10px;background:rgba(255,255,255,0.8);border-radius:16px;margin-top:10px}
+.input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
+.input-row button{padding:10px 20px;border-radius:24px;border:none;background:linear-gradient(135deg,#e892a8,#b8a2e8);color:#fff;font-size:14px;font-weight:600}
+.back{display:block;text-align:center;margin:8px 0;color:#8a7f92;font-size:13px}
+.back a{color:#e892a8}
+.loading{text-align:center;padding:40px;color:#8a7f92}
+</style>
+</head>
+<body>
+<h2>💬 私聊</h2>
+<div class="back"><a href="yearbook.html">← 返回大厅</a></div>
+<div id="messages"><div class="loading">加载中...</div></div>
+<div class="input-row">
+  <input type="text" id="input" placeholder="输入消息..." maxlength="1000" autocomplete="off">
+  <button id="send">发送</button>
+</div>
+<script src="supabase.min.js"></script>
+<script>
+var sb = window.supabase.createClient(
+  'https://sxjrmlylgcadzfitascx.supabase.co',
+  'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT'
+);
+var me = null, partner = null;
+var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
+
+async function init() {
+  var r = await sb.auth.getSession();
+  if (!r.data.session) { document.getElementById('messages').innerHTML = '<div class="loading">请先在主页登录</div>'; return; }
+  var r2 = await sb.from('students').select('*').eq('auth_id', r.data.session.user.id).single();
+  if (!r2.data) { document.getElementById('messages').innerHTML = '<div class="loading">用户不存在</div>'; return; }
+  me = r2.data;
+
+  var p = new URLSearchParams(location.search).get('with');
+  if (!p) {
+    var r3 = await sb.from('students').select('id,name,avatar').order('name');
+    var html = '<p style="text-align:center;font-size:14px;margin-bottom:12px">选择私聊对象</p>';
+    (r3.data||[]).forEach(function(s) {
+      if (s.id !== me.id) html += '<a href="?with='+s.id+'" style="display:block;padding:10px;background:rgba(255,255,255,0.7);border-radius:12px;margin-bottom:6px;text-decoration:none;color:#4a3f52;font-size:14px">'+s.avatar+' '+s.name+'</a>';
+    });
+    document.getElementById('messages').innerHTML = html;
+    document.querySelector('.input-row').style.display = 'none';
+    return;
+  }
+
+  var r4 = await sb.from('students').select('*').eq('id', p).single();
+  if (!r4.data) { document.getElementById('messages').innerHTML = '<div class="loading">用户不存在</div>'; return; }
+  partner = r4.data;
+  document.querySelector('h2').textContent = '💬 与 '+partner.name+' 私聊';
+  loadMsgs(); setInterval(loadMsgs, 2000);
+}
+
+async function loadMsgs() {
+  if (!partner) return;
+  var r = await sb.from('direct_messages').select('*')
+    .or('sender_id.eq.'+me.id+',receiver_id.eq.'+me.id)
+    .order('created_at',{ascending:true}).limit(200);
+  var msgs = (r.data||[]).filter(function(m) {
+    return (m.sender_id===me.id&&m.receiver_id===partner.id)||(m.sender_id===partner.id&&m.receiver_id===me.id);
+  });
+  // 标记已读
+  var unread = msgs.filter(function(m){return m.sender_id===partner.id&&!m.read;}).map(function(m){return m.id;});
+  if (unread.length) sb.from('direct_messages').update({read:true}).in('id',unread).then(function(){});
+  var c = document.getElementById('messages');
+  var h = '';
+  msgs.forEach(function(m){
+    var im = m.sender_id===me.id;
+    var nm = m.sender_name||'?'; var ci = nm.charCodeAt(0)%colors.length;
+    var t = new Date(m.created_at).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    var rd = (im&&m.read)?' <span class="rd">✓已读</span>':'';
+    h += '<div class="msg'+(im?' me':'')+'">'
+      +'<div class="av" style="background:'+colors[ci]+'">'+nm.charAt(nm.length-1)+'</div>'
+      +'<div><div class="nm">'+(im?'我':nm)+rd+'</div>'
+      +'<div class="bub">'+m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>'
+      +'<div class="tm">'+t+'</div></div></div>';
+  });
+  c.innerHTML = h||'<div class="loading">还没有消息，发一条吧 ✨</div>';
+  c.scrollTop = c.scrollHeight;
+}
+
+async function send() {
+  var t = document.getElementById('input').value.trim();
+  if (!t||!partner) return;
+  document.getElementById('input').value = '';
+  await sb.from('direct_messages').insert({sender_id:me.id,receiver_id:partner.id,content:t});
+  loadMsgs();
+}
+document.getElementById('send').onclick = send;
+document.getElementById('input').onkeydown = function(e){if(e.key==='Enter')send();};
+init();
+</script>
+</body>
+</html>

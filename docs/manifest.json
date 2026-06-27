@@ -1,0 +1,18 @@
+{
+  "name": "青春纪念册",
+  "short_name": "纪念册",
+  "description": "高中同学录 - 留住我们的青春",
+  "start_url": "/yearbook/yearbook.html",
+  "display": "standalone",
+  "background_color": "#1e0a3c",
+  "theme_color": "#e892a8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/yearbook/icon-192.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💬 聊天室</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(160deg,#fef5f8,#f5f0fd);min-height:100vh;padding:10px}
+h2{text-align:center;margin:10px 0;color:#4a3f52;font-size:18px}
+#messages{height:60vh;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg.me{flex-direction:row-reverse}
+.msg .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+.msg .bub{max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;word-break:break-word}
+.msg:not(.me) .bub{background:#f5f0f8;border-bottom-left-radius:4px}
+.msg.me .bub{background:linear-gradient(135deg,#e892a8,#b8a2e8);color:#fff;border-bottom-right-radius:4px}
+.msg .nm{font-size:11px;color:#8a7f92;margin-bottom:2px}
+.msg .tm{font-size:10px;color:#c0b8c8;margin-top:2px;text-align:right}
+.input-row{display:flex;gap:8px;padding:10px;background:rgba(255,255,255,0.8);border-radius:16px;margin-top:10px}
+.input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
+.input-row button{padding:10px 20px;border-radius:24px;border:none;background:linear-gradient(135deg,#e892a8,#b8a2e8);color:#fff;font-size:14px;font-weight:600}
+.back{display:block;text-align:center;margin:8px 0;color:#8a7f92;font-size:13px}
+</style>
+</head>
+<body>
+<h2>💬 班级聊天室</h2>
+<a class="back" href="javascript:history.back()">← 返回</a>
+<div id="messages"><p style="text-align:center;color:#8a7f92">加载中...</p></div>
+<div class="input-row">
+  <input type="text" id="input" placeholder="输入消息..." maxlength="500" autocomplete="off">
+  <button id="send">发送</button>
+</div>
+
+<script src="supabase.min.js"></script>
+<script>
+var SUPABASE_URL = 'https://sxjrmlylgcadzfitascx.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_khXyfj-AJETThfvfoJNXtw_dx5L2jKT';
+var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var me = null;
+var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
+
+async function init() {
+  // 恢复登录
+  var resp = await sb.auth.getSession();
+  var session = resp.data.session;
+  if (!session) {
+    document.getElementById('messages').innerHTML = '<p style="text-align:center;color:#c06070;padding:40px">你还没有登录哦<br><br><a href="yearbook.html" style="color:#e892a8;font-size:16px">→ 点此去登录/注册</a></p>';
+    return;
+  }
+
+  var resp2 = await sb.from('students').select('*').eq('auth_id', session.user.id).single();
+  if (!resp2.data) {
+    document.getElementById('messages').innerHTML = '<p style="text-align:center;color:#c06070;padding:40px">未找到用户信息<br><br><a href="yearbook.html" style="color:#e892a8;font-size:16px">→ 返回主页注册</a></p>';
+    return;
+  }
+  me = resp2.data;
+
+  loadMessages();
+  setInterval(loadMessages, 2000);
+}
+
+async function loadMessages() {
+  var resp = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+  var msgs = (resp.data || []).reverse();
+  var container = document.getElementById('messages');
+  var html = '';
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    var isMe = m.sender_id === me.id;
+    var ci = (m.sender_name || '?').charCodeAt(0) % colors.length;
+    var t = new Date(m.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    html += '<div class="msg' + (isMe ? ' me' : '') + '">'
+      + '<div class="av" style="background:' + colors[ci] + '">' + (m.sender_name||'?').charAt((m.sender_name||'?').length-1) + '</div>'
+      + '<div><div class="nm">' + (isMe ? '我' : (m.sender_name||'?')) + '</div>'
+      + '<div class="bub">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+      + '<div class="tm">' + t + '</div></div></div>';
+  }
+  container.innerHTML = html || '<p style="text-align:center;color:#8a7f92">还没有消息</p>';
+  container.scrollTop = container.scrollHeight;
+}
+
+async function send() {
+  var input = document.getElementById('input');
+  var content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  await sb.from('messages').insert({ sender_id: me.id, sender_name: me.name, content: content });
+  loadMessages();
+}
+
+document.getElementById('send').onclick = send;
+document.getElementById('input').onkeydown = function(e) { if (e.key === 'Enter') send(); };
+
+init();
+</script>
+</body>
+</html>
