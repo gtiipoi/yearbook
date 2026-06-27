@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>✨ 青春纪念册</title>
+<meta name="theme-color" content="#e892a8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="纪念册">
+<link rel="manifest" href="/yearbook/manifest.json">
 <style>
 /* ============================================ */
 /*  变量 & 基础                                   */
@@ -160,7 +165,7 @@ body {
 /* ============================================ */
 .hall-scene{
   position:relative;width:100%;max-width:700px;margin:0 auto;
-  aspect-ratio:1/1;overflow:hidden;
+  
 }
 .hall-photos{position:absolute;inset:0;z-index:0}
 .hall-photo{
@@ -171,7 +176,19 @@ body {
 .hall-photo.on{opacity:1}
 .sphere-wrap{position:absolute;inset:0;z-index:1}
 .sphere-wrap canvas{display:block;width:100%;height:100%}
-.hall-hint{text-align:center;margin-top:14px;font-size:13px;color:var(--text-light);animation:hintPulse 3s ease-in-out infinite}
+.hall-hint{text-align:center;margin-top:14px;font-size:13px;color:var(--text-light)}
+.guest-banner{
+  text-align:center;padding:14px 20px;margin-bottom:12px;font-size:14px;color:#fff;
+  background:linear-gradient(135deg,rgba(180,130,210,0.75),rgba(220,140,170,0.75));backdrop-filter:blur(10px);
+  border-radius:16px;display:flex;align-items:center;justify-content:center;gap:12px;
+  box-shadow:0 4px 20px rgba(180,140,180,0.25);animation:bannerIn 0.6s ease
+}
+@keyframes bannerIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.guest-banner a{
+  color:#fff;background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;
+  text-decoration:none;font-weight:700;transition:all 0.3s;border:1px solid rgba(255,255,255,0.3)
+}
+.guest-banner a:hover{background:rgba(255,255,255,0.35);transform:scale(1.04)}
 @keyframes hintPulse{0%,100%{opacity:0.45}50%{opacity:1}}
 
 /* 照片指示器 */
@@ -299,23 +316,141 @@ body {
 .upload-area input[type=file]{display:none}
 
 /* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+.chat-box{
+  background:var(--card-bg);backdrop-filter:blur(16px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  height:60vh;max-height:500px;display:flex;flex-direction:column;overflow:hidden
+}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;animation:msgIn 0.3s ease}
+.chat-msg.me{flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg .cm-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff
+}
+.chat-msg .cm-bubble{
+  max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word
+}
+.chat-msg:not(.me) .cm-bubble{background:#f5f0f8;color:var(--text);border-bottom-left-radius:4px}
+.chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
+.chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
+.chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
+.chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
+.chat-input-row input:focus{border-color:var(--purple)}
+.chat-input-row button{padding:10px 20px;border-radius:24px;border:none;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-size:14px;cursor:pointer;font-weight:600}
+.chat-empty{text-align:center;padding:40px;color:var(--text-light);font-size:13px}
+.nav-badge{position:relative}
+.nav-badge::after{content:'';position:absolute;top:-4px;right:-6px;width:10px;height:10px;border-radius:50%;background:#ff4757;box-shadow:0 0 8px rgba(255,71,87,0.6);animation:pulse2 2s infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
+.online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
+.dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+
+/* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+.chat-box{
+  background:var(--card-bg);backdrop-filter:blur(16px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  height:60vh;max-height:500px;display:flex;flex-direction:column;overflow:hidden
+}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;animation:msgIn 0.3s ease}
+.chat-msg.me{flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg .cm-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff
+}
+.chat-msg .cm-bubble{
+  max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word
+}
+.chat-msg:not(.me) .cm-bubble{background:#f5f0f8;color:var(--text);border-bottom-left-radius:4px}
+.chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
+.chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
+.chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
+.chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
+.chat-input-row input:focus{border-color:var(--purple)}
+.chat-input-row button{padding:10px 20px;border-radius:24px;border:none;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-size:14px;cursor:pointer;font-weight:600}
+.chat-empty{text-align:center;padding:40px;color:var(--text-light);font-size:13px}
+.nav-badge{position:relative}
+.nav-badge::after{content:'';position:absolute;top:-4px;right:-6px;width:10px;height:10px;border-radius:50%;background:#ff4757;box-shadow:0 0 8px rgba(255,71,87,0.6);animation:pulse2 2s infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
+.online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
+.dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+
+/* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+.chat-box{
+  background:var(--card-bg);backdrop-filter:blur(16px);
+  border-radius:var(--radius);box-shadow:var(--shadow);
+  height:60vh;max-height:500px;display:flex;flex-direction:column;overflow:hidden
+}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;animation:msgIn 0.3s ease}
+.chat-msg.me{flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg .cm-avatar{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff
+}
+.chat-msg .cm-bubble{
+  max-width:70%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word
+}
+.chat-msg:not(.me) .cm-bubble{background:#f5f0f8;color:var(--text);border-bottom-left-radius:4px}
+.chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
+.chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
+.chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
+.chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
+.chat-input-row input:focus{border-color:var(--purple)}
+.chat-input-row button{padding:10px 20px;border-radius:24px;border:none;background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-size:14px;cursor:pointer;font-weight:600}
+.chat-empty{text-align:center;padding:40px;color:var(--text-light);font-size:13px}
+.nav-badge{position:relative}
+.nav-badge::after{content:'';position:absolute;top:-4px;right:-6px;width:10px;height:10px;border-radius:50%;background:#ff4757;box-shadow:0 0 8px rgba(255,71,87,0.6);animation:pulse2 2s infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
+.online-dot{width:10px;height:10px;border-radius:50%;background:#4caf50;display:inline-block;box-shadow:0 0 8px rgba(76,175,80,0.5);margin-left:4px}
+.dm-header{text-align:center;padding:12px;border-bottom:1px solid #f0ecf4;font-size:14px;font-weight:600}
+
+/* ============================================ */
 /*  响应式                                       */
 /* ============================================ */
 @media(max-width:600px){
-  .container{padding:12px 8px 40px}
-  .login-card{padding:28px 16px;margin:20px auto}
-  .form-row{flex-direction:column}
-  .profile-header{padding:20px 16px}
-  .stats-row{gap:16px;flex-wrap:wrap}
-  .stat-num{font-size:24px}
-  .modal{padding:24px 16px;margin:10px}
-  .navbar{padding:10px 14px}
-  .nav-title{font-size:17px}
-  .hall-scene{max-width:100%}
-  .hall-hint{font-size:11px}
+  body{font-size:15px}
+  .container{padding:8px 4px 40px}
+  .login-card{padding:24px 12px;margin:12px auto}
+  .form-row{flex-direction:column;gap:6px}
+  .profile-header{padding:16px 12px}
+  .stats-row{gap:12px;flex-wrap:wrap}
+  .stat-num{font-size:22px}
+  .modal{padding:20px 14px;margin:8px}
+  .navbar{padding:8px 10px;margin-bottom:12px;gap:8px}
+  .nav-title{font-size:16px}
+  .hall-scene{max-width:100%;margin:0 -4px;width:calc(100% + 8px)}
+  .hall-hint{font-size:12px;margin-top:8px}
   .ph-name{font-size:20px}
-  .review-card{padding:14px 16px}
+  .review-card{padding:12px 14px}
+  /* 手机大厅增强 */
+  .sphere-wrap canvas{border-radius:0}
+  .guest-banner{font-size:12px;padding:10px 12px;margin-bottom:8px;flex-wrap:wrap}
+  .guest-banner a{padding:4px 12px;font-size:12px}
+  .photo-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .photo-card img,.photo-card video{height:140px}
+  .section-title{font-size:15px!important}
+  .btn{font-size:12px;padding:6px 14px}
+  .existing-item{padding:10px 12px}
+  .existing-item .ei-avatar{width:34px;height:34px;font-size:18px}
+  .existing-item .ei-name{font-size:13px}
 }
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(8px)}}
 </style>
 </head>
 <body>
@@ -336,8 +471,9 @@ body {
         <div class="nav-avatar" id="navAvatar"></div>
         <span id="navName"></span>
       </div>
-      <button class="btn btn-outline" id="btnPhotos" style="display:none;margin-right:8px" onclick="goPhotos()">📷 照片墙</button>
-      <button class="btn btn-logout" id="btnLogout" style="display:none" onclick="doLogout()">🚪 登出</button>
+      <button class="btn btn-outline nav-badge" id="btnChat" style="display:none;margin-right:8px" onclick="goChat()">💬 聊天室</button>
+      <button class="btn btn-outline" id="btnPhotos" style="display:none;margin-right:8px" onclick="goPhotos();return false;">📷 照片墙</button>
+      <button class="btn btn-logout" id="btnLogout" style="display:none" onclick="doLogout();return false;">🚪 登出</button>
     </div>
   </nav>
   <div id="view"><div class="loading">加载中</div></div>
@@ -424,28 +560,39 @@ async function getAllStudentIds() {
 /*  渲染入口                                      */
 /* ============================================ */
 async function render() {
-  endSphere(); endPhotoBg();
+  endSphere(); endChat();
   updateNav();
   if (view === 'login') await renderLogin();
   else if (view === 'hall') await renderHall();
   else if (view === 'profile') await renderProfile();
   else if (view === 'photos') await renderPhotos();
+  else if (view === 'chat') await renderChat();
 }
 
 function updateNav() {
   const u = document.getElementById('navUser');
   const b = document.getElementById('btnLogout');
   const pb = document.getElementById('btnPhotos');
+  const cb = document.getElementById('btnChat');
+  // 隐藏安装按钮（已废弃）
+  var ib = document.getElementById('btnInstallApp');
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+    if (ib) ib.style.display = 'none';
+  }
   if (me) {
     u.style.display = 'flex';
+    u.style.cursor = 'pointer';
+    u.onclick = () => openProfile(me.id);
     document.getElementById('navAvatar').textContent = me.avatar;
     document.getElementById('navName').textContent = me.name;
     b.style.display = '';
     if (pb) pb.style.display = '';
+    if (cb) cb.style.display = ''; checkUnreadDM();
   } else {
-    u.style.display = 'none';
+    u.style.display = 'none'; u.onclick = null;
     b.style.display = 'none';
     if (pb) pb.style.display = 'none';
+    if (cb) cb.style.display = 'none';
   }
 }
 
@@ -471,7 +618,7 @@ async function renderLogin() {
   document.getElementById('view').innerHTML = `
     <div class="login-card">
       <h2>✨ 青春纪念册</h2>
-      <p class="login-sub">注册账号，加入我们的星空</p>
+      <p class="login-sub">输入你的真实姓名认领预留账号，或注册新账号</p>
 
       <div class="login-tabs">
         <button class="login-tab on" data-tab="reg">📝 注册</button>
@@ -610,19 +757,10 @@ async function renderLogin() {
     };
   });
 
-  // 点击已注册用户 → 查看他们的主页
-  document.querySelectorAll('.existing-item:not(.seed)').forEach(item => {
+  // 点击任何用户 → 游客弹窗
+  document.querySelectorAll('.existing-item').forEach(item => {
     item.onclick = async () => {
-      const sid = item.dataset.sid;
-      if (sid) { viewing = await getStudent(sid); view = 'profile'; render(); }
-    };
-  });
-
-  // 点击种子用户 → 查看主页
-  document.querySelectorAll('.existing-item.seed').forEach(item => {
-    item.onclick = async () => {
-      const sid = item.dataset.sid;
-      if (sid) { viewing = await getStudent(sid); view = 'profile'; render(); }
+      showGuestModal();
     };
   });
 
@@ -670,18 +808,37 @@ async function doRegister() {
       await sb.auth.setSession(authData.session);
     }
 
-    // 3. 在 students 表中创建记录
-    const { data: student, error: insertError } = await sb.from('students')
-      .insert({ auth_id: authData.user.id, name, cls, avatar })
-      .select().single();
+    // 3. 匹配预置学生 — 如果名字一样就认领种子账号
+    let student;
+    const { data: matched } = await sb.from('students')
+      .select('*').eq('name', name).eq('is_seed', true).is('auth_id', null).single();
 
-    if (insertError) {
-      showError('创建用户信息失败: ' + insertError.message);
-      setLoading(false);
-      return;
+    if (matched) {
+      // 认领种子账号
+      const { data: updated, error: updateError } = await sb.from('students')
+        .update({ auth_id: authData.user.id, is_seed: false, cls, avatar })
+        .eq('id', matched.id)
+        .select().single();
+      if (updateError) {
+        showError('认领账号失败: ' + updateError.message);
+        setLoading(false);
+        return;
+      }
+      student = updated;
+    } else {
+      // 没有匹配的预置学生，创建新记录
+      const { data: newStudent, error: insertError } = await sb.from('students')
+        .insert({ auth_id: authData.user.id, name, cls, avatar, email: email })
+        .select().single();
+      if (insertError) {
+        showError('创建用户信息失败: ' + insertError.message);
+        setLoading(false);
+        return;
+      }
+      student = newStudent;
     }
 
-    // 3. 自动登录
+    // 4. 自动登录
     me = student;
     view = 'hall'; viewing = null;
     setLoading(false);
@@ -750,6 +907,7 @@ async function doLogin() {
 }
 
 async function doLogout() {
+  stopPresence();
   await sb.auth.signOut();
   me = null; view = 'login'; viewing = null;
   await render();
@@ -758,26 +916,82 @@ async function doLogout() {
 /* ============================================ */
 /*  大厅 — 3D 星球                              */
 /* ============================================ */
+let _actCache = {};
+
 async function renderHall() {
   const students = await fetchStudents();
+  // 加载最新活动用于通知
+  const { data: acts } = await sb.from('activities').select('*').order('created_at', { ascending: false }).limit(100);
+  _actCache = {};
+  if (acts) acts.forEach(a => { if (!_actCache[a.student_id]) _actCache[a.student_id] = []; _actCache[a.student_id].push(a); });
   document.getElementById('view').innerHTML = `
+    ${!me ? `<div style="text-align:center;margin-bottom:16px">
+      <div style="display:inline-flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(180,130,210,0.7),rgba(220,140,170,0.7));backdrop-filter:blur(12px);padding:12px 24px;border-radius:30px;color:#fff;font-size:14px;box-shadow:0 4px 24px rgba(180,140,180,0.3);animation:bannerIn 0.6s ease">
+        <span style="font-size:22px">✨</span>
+        <span>欢迎来到我们的青春星空</span>
+        <span id="guestLoginBtn2" style="background:rgba(255,255,255,0.25);padding:8px 18px;border-radius:20px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,0.4);transition:all 0.3s" onmouseenter="this.style.background='rgba(255,255,255,0.4)'" onmouseleave="this.style.background='rgba(255,255,255,0.25)'">🚀 登录 / 注册</span>
+        <span style="font-size:22px">✨</span>
+      </div>
+    </div>` : ''}
     <div class="section-title text-center" style="font-size:18px;font-weight:700;margin-bottom:16px">🌌 我们的星空 (${students.length}人)</div>
     <div class="hall-scene" id="hallScene">
-      <div class="hall-photos" id="hallPhotos"></div>
       <div class="sphere-wrap" id="sphereWrap">
         <canvas id="sphereCvs"></canvas>
       </div>
     </div>
-    <p class="hall-hint">✨ 鼠标悬停头像星球会停下，点击进入 TA 的主页</p>
+    ${me ? '<p class="hall-hint">✨ 鼠标悬停头像星球会停下，点击进入 TA 的主页</p>' : ''}
   `;
-  await initPhotoBg();
+  const glb2 = document.getElementById('guestLoginBtn2');
+  if (glb2) glb2.onclick = () => { me = null; view = 'login'; viewing = null; endSphere(); updateNav(); renderLogin(); };
+  if (me) startPresence();
   requestAnimationFrame(() => requestAnimationFrame(() => initSphere(students)));
 }
 
 /* ---- 星球引擎 ---- */
 let sRAF = null, sRotY = 0, sRotX = 0.35, sAuto = true, sHover = -1, sMx = 0, sMy = 0, sPts = [], sCache = [];
+let sTouchStart = null, sTouchLast = null;
 
 function endSphere() { if (sRAF) { cancelAnimationFrame(sRAF); sRAF = null; } sHover = -1; sAuto = true; }
+function startPresence() {
+  if (_heartbeatTimer) return; // 已在运行中
+
+  async function tick() {
+    if (!me) return;
+    try {
+      // 更新在线心跳
+      var now = new Date().toISOString();
+      await sb.from('students').update({ last_email_notified: now }).eq('id', me.id);
+      // 查询在线用户（45秒内有心跳的）
+      var cutoff = new Date(Date.now() - 45000).toISOString();
+      var resp = await sb.from('students').select('id').gte('last_email_notified', cutoff);
+      _onlineUsers = {};
+      (resp.data || []).forEach(function(s) { _onlineUsers[s.id] = true; });
+    } catch(e) {}
+  }
+
+  tick(); // 立即执行一次
+  _heartbeatTimer = setInterval(tick, 20000); // 每20秒一次
+}
+function stopPresence() {
+  if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
+  _onlineUsers = {};
+}
+async function checkUnreadDM() {
+  if (!me) return;
+  var cb = document.getElementById('btnChat');
+  if (!cb) return;
+  try {
+    var resp = await sb.from('direct_messages').select('id', { count: 'exact', head: true }).eq('receiver_id', me.id).eq('read', false);
+    var count = resp.count || 0;
+    if (count > 0) {
+      cb.style.position = 'relative';
+      cb.setAttribute('data-badge', count);
+    } else {
+      cb.removeAttribute('data-badge');
+    }
+  } catch(e) {}
+}
+function endChat() { if (window._chatPollTimer) { clearInterval(window._chatPollTimer); window._chatPollTimer = null; } }
 
 function initSphere(students) {
   endSphere();
@@ -791,7 +1005,7 @@ function initSphere(students) {
   cvs.style.width = S + 'px'; cvs.style.height = S + 'px';
 
   const n = students.length;
-  const R = S * 0.35;
+  const R = S * (window.innerWidth < 600 ? 0.44 : 0.35);
   const phi = Math.PI * (3 - Math.sqrt(5));
 
   sPts = students.map((s, i) => {
@@ -814,17 +1028,64 @@ function initSphere(students) {
   };
   cvs.onmouseleave = () => { sMx = -999; sMy = -999; sAuto = true; sHover = -1; };
   // 手机触控
-  cvs.ontouchmove = e => {
-    e.preventDefault();
+  cvs.addEventListener('touchstart', e => {
     const t = e.touches[0];
-    const p = getCanvasXY(t.clientX, t.clientY);
-    sMx = p.x; sMy = p.y;
-  };
-  cvs.ontouchend = () => { sMx = -999; sMy = -999; sAuto = true; sHover = -1; };
+    if (t) {
+      sTouchStart = { x: t.clientX, y: t.clientY, rotY: sRotY, rotX: sRotX }; sTouchLast = sTouchStart; sAuto = false;
+      // 立即更新触摸坐标，让 hover 检测生效
+      const rect = cvs.getBoundingClientRect();
+      sMx = (t.clientX - rect.left) * (cvs.width / rect.width);
+      sMy = (t.clientY - rect.top) * (cvs.height / rect.height);
+    }
+  }, { passive: true });
+  cvs.addEventListener('touchmove', e => {
+    if (!sTouchStart) return;
+    const t = e.touches[0];
+    if (t) {
+      const dx = t.clientX - sTouchStart.x;
+      const dy = t.clientY - sTouchStart.y;
+      sRotY = sTouchStart.rotY + dx * 0.005;
+      sRotX = Math.max(-0.8, Math.min(0.8, sTouchStart.rotX + dy * 0.005));
+      sMx = (t.clientX - cvs.getBoundingClientRect().left) * (cvs.width / cvs.getBoundingClientRect().width);
+      sMy = (t.clientY - cvs.getBoundingClientRect().top) * (cvs.height / cvs.getBoundingClientRect().height);
+      sTouchLast = { x: t.clientX, y: t.clientY };
+    }
+  }, { passive: true });
+  cvs.addEventListener('touchend', () => {
+    if (sTouchStart && sTouchLast) {
+      const dx = sTouchLast.x - sTouchStart.x;
+      const dy = sTouchLast.y - sTouchStart.y;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+        // 直接计算点击到了哪个头像（不等动画帧）
+        const rect = cvs.getBoundingClientRect();
+        const cx = (sTouchLast.x - rect.left) * (cvs.width / rect.width);
+        const cy = (sTouchLast.y - rect.top) * (cvs.height / rect.height);
+        for (let i = sCache.length - 1; i >= 0; i--) {
+          const p = sCache[i];
+          if (Math.hypot(cx - p.sx, cy - p.sy) < 28 * p.scale) {
+            if (p.student) {
+              if (!me) showGuestModal();
+              else openProfile(p.student.id);
+            }
+            break;
+          }
+        }
+      }
+    }
+    sTouchStart = null; sTouchLast = null;
+    sMx = -999; sMy = -999; sAuto = true; sHover = -1;
+  });
   cvs.onclick = () => {
     if (sHover >= 0 && sHover < sCache.length) {
       const p = sCache[sHover];
-      if (p && p.student) openProfile(p.student.id);
+      if (p && p.student) {
+        if (!me) {
+          // 游客弹窗提示
+          showGuestModal();
+        } else {
+          openProfile(p.student.id);
+        }
+      }
     }
   };
 
@@ -970,9 +1231,42 @@ function animateSphere(cvs, S, dpr) {
     else { ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 0.7; }
     ctx.stroke();
 
-    ctx.font = `${r * 1.0}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",serif`;
+    // 头像 — 用名字首字 + 彩色背景（兼容所有设备）
+    const colors = ['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0',
+                    '#f0b0b0','#c0c0e0','#b0d0b0','#e0c080','#a0c8e0','#e0a0a0','#90c8b0','#d0a8d8'];
+    const lastName = p.student.name.charAt(p.student.name.length - 1);
+    const ci = lastName.charCodeAt(0) % colors.length;
+    ctx.fillStyle = colors[ci];
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, r*0.78, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    const fs = r * 0.85;
+    ctx.font = `bold ${fs}px "PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(p.student.avatar, p.sx, p.sy + 1);
+    ctx.fillText(lastName, p.sx, p.sy + 1);
+
+    // 在线绿点
+    if (_onlineUsers[p.student.id]) {
+      ctx.fillStyle = '#4caf50';
+      ctx.beginPath(); ctx.arc(p.sx + r*0.55, p.sy - r*0.7, r*0.2, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(76,175,80,0.3)';
+      ctx.beginPath(); ctx.arc(p.sx + r*0.55, p.sy - r*0.7, r*0.35, 0, Math.PI*2); ctx.fill();
+    }
+
+    // 通知光效
+    const acts = _actCache[p.student.id];
+    if (acts && acts.length > 0) {
+      const hasNew = acts.some(a => !a.seen);
+      if (hasNew) {
+        const ng = ctx.createRadialGradient(p.sx, p.sy - r*0.8, 0, p.sx, p.sy - r*0.8, r*0.6);
+        ng.addColorStop(0, 'rgba(255,220,80,0.9)');
+        ng.addColorStop(0.5, 'rgba(255,180,50,0.4)');
+        ng.addColorStop(1, 'rgba(255,150,30,0)');
+        ctx.fillStyle = ng; ctx.beginPath(); ctx.arc(p.sx, p.sy - r*0.8, r*0.55, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffe066';
+        ctx.font = `bold ${10*p.scale}px "Segoe UI Emoji"`;
+        ctx.fillText('🔔', p.sx, p.sy - r*0.8 + 1);
+      }
+    }
 
     if (isMe && !hov) {
       ctx.fillStyle = 'rgba(255,255,255,0.65)';
@@ -1062,7 +1356,7 @@ async function renderProfile() {
   }
 
   document.getElementById('view').innerHTML = `
-    <button class="btn btn-back mb-16" onclick="backToHall()">← 返回大厅</button>
+    <a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none">← 返回大厅</a>
     <div class="profile-header">
       <div class="ph-avatar">${s.avatar}</div>
       <div class="ph-name">${s.name}${isMe ? '（我）' : ''}</div>
@@ -1072,21 +1366,228 @@ async function renderProfile() {
         <div class="stat-item"><div class="stat-num">${wc}</div><div class="stat-label">💡 待改进</div></div>
         <div class="stat-item"><div class="stat-num">${rvs.length}</div><div class="stat-label">📝 总评价</div></div>
       </div>
-      ${me && !isMe ? `<div class="mt-16"><button class="btn btn-primary" onclick="openWrite()">✍️ 给 ${s.name} 写评价</button></div>` : ''}
-      ${isMe ? `<p class="mt-16" style="font-size:12px;color:var(--text-light)">这是你的主页，大家给你的评价会显示在这里</p>` : ''}
+      ${me && !isMe ? `<div class="mt-16" style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn btn-primary" onclick="openWrite()">✍️ 写评价</button><a href="dm.html?with=${s.id}" class="btn btn-outline" style="text-decoration:none">💬 私聊</a></div>` : ''}
+      ${isMe ? `<p class="mt-16" style="font-size:12px;color:var(--text-light)">这是你的主页，大家给你的评价会显示在这里</p>
+      <button class="btn btn-outline mt-16" onclick="changePassword()" style="font-size:12px">🔑 修改密码</button>` : ''}
       ${s.is_seed ? `<p class="mt-16" style="font-size:11px;color:var(--text-light)">⚠️ 这是预置学生，不可登录。注册你自己的账号来写评价吧~</p>` : ''}
     </div>
+    ${isMe ? `
+    <div style="margin-top:24px">
+      <div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">📷 我的媒体墙</div>
+      <p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:12px">分享照片和视频到你的主页</p>
+      <div class="upload-area" id="mediaUploadArea" style="margin-bottom:16px">
+        <div class="ua-icon">📤</div>
+        <div class="ua-text">点击上传照片/视频（最大10MB）</div>
+        <input type="file" id="mediaFile" accept="image/*,video/*">
+      </div>
+      <div id="myMediaGrid"></div>
+    </div>` : ''}
     <div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:16px">📝 TA 收到的评价</div>
     <div class="review-list">${rvHTML}</div>
   `;
+
+  // 加载自己的媒体
+  if (isMe) {
+    loadMyMedia();
+    // 媒体上传事件
+    setTimeout(() => {
+      const mua = document.getElementById('mediaUploadArea');
+      const mf = document.getElementById('mediaFile');
+      if (mua && mf) {
+        mua.onclick = () => mf.click();
+        mf.onchange = async (e) => {
+          const file = e.target.files[0]; if (!file) return;
+          if (file.size > 10*1024*1024) { alert('文件不能超过 10MB'); return; }
+          const isVideo = file.type.startsWith('video/');
+          mua.innerHTML = '<div class="ua-icon">⏳</div><div class="ua-text">上传中...</div>';
+          const fn = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const { error: upErr } = await sb.storage.from('yearbook-assets').upload('media/' + fn, file);
+          if (upErr) { alert('上传失败: '+upErr.message); loadMyMedia(); return; }
+          const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('media/' + fn);
+          await sb.from('photos').insert({ uploader_id: me.id, student_id: me.id, url: urlData.publicUrl, caption: isVideo ? '🎬 视频' : '📷 照片', type: isVideo ? 'video' : 'photo' });
+          // 创建通知
+          await sb.from('activities').insert({ student_id: me.id, type: isVideo ? 'video' : 'photo', message: me.name + ' 上传了新的' + (isVideo ? '视频' : '照片'), related_id: me.id });
+          loadMyMedia();
+        };
+      }
+    }, 100);
+  }
 }
+
+function goGuestLogin() {
+  me = null; view = 'login'; viewing = null;
+  endSphere(); endPhotoBg();
+  updateNav();
+  renderLogin();
+}
+async function loadMyMedia() {
+  const grid = document.getElementById('myMediaGrid');
+  if (!grid || !me) return;
+  const { data: media } = await sb.from('photos').select('*').eq('student_id', me.id).order('created_at', { ascending: false }).limit(20);
+  if (!media || media.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📷</div><p>还没有分享过照片或视频</p></div>';
+    return;
+  }
+  grid.innerHTML = '<div class="photo-grid">' + media.map(m => {
+    const isVideo = m.type === 'video';
+    return `<div class="photo-card" style="position:relative">
+      ${isVideo ? `<video src="${m.url}" controls style="width:100%;height:180px;object-fit:cover;display:block"></video>` : `<img src="${m.url}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block">`}
+      
+    </div>`;
+  }).join('') + '</div>';
+}
+
+async function deleteMedia(id) {
+  if (!confirm('确定删除？')) return;
+  // 从 storage 删除
+  const { data: media } = await sb.from('photos').select('url').eq('id', id).single();
+  if (media) {
+    const path = media.url.split('/').slice(-2).join('/');
+    try { await sb.storage.from('yearbook-assets').remove([path]); } catch(e) {}
+  }
+  await sb.from('photos').delete().eq('id', id);
+  loadMyMedia();
+}
+
+function goChat() { viewing = null; view = 'chat'; render(); }
 
 function goPhotos() { viewing = null; view = 'photos'; render(); }
 async function backToHall() { viewing = null; view = 'hall'; await render(); }
 
+async function openDM(partnerId, partnerName) {
+  if (!me) return;
+  _dmPartner = { id: partnerId, name: partnerName };
+  view = 'dm'; viewing = null;
+  await render();
+}
+
+
+/* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+let _onlineUsers = {};
+let _heartbeatTimer = null;
+async function renderChat() {
+  if (!me) { goGuestLogin(); return; }
+  endChat();
+
+  var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
+
+  document.getElementById('view').innerHTML = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none">← 返回大厅</a>'
+    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">💬 班级聊天室</div>'
+    + '<div class="chat-box"><div class="chat-messages" id="chatMessages"><p style="text-align:center;color:#8a7f92;padding:20px">加载中...</p></div>'
+    + '<div class="chat-input-row"><input type="text" id="chatInput" placeholder="输入消息..." maxlength="500" autocomplete="off">'
+    + '<button id="chatSend">发送</button></div></div>';
+
+  async function loadChat() {
+    var resp = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+    var msgs = (resp.data || []).reverse();
+    var container = document.getElementById('chatMessages');
+    if (!container) return;
+    var html = '';
+    for (var i = 0; i < msgs.length; i++) {
+      var m = msgs[i];
+      var isMe = m.sender_id === me.id;
+      var nm = m.sender_name || '?';
+      var ci = nm.charCodeAt(0) % colors.length;
+      var t = new Date(m.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      html += '<div class="chat-msg' + (isMe ? ' me' : '') + '">'
+        + '<div class="cm-avatar" style="background:' + colors[ci] + '">' + nm.charAt(nm.length-1) + '</div>'
+        + '<div><div class="cm-name">' + (isMe ? '我' : nm) + '</div>'
+        + '<div class="cm-bubble">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+        + '<div class="cm-time">' + t + '</div></div></div>';
+    }
+    container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，来发第一条吧 ✨</p>';
+    container.scrollTop = container.scrollHeight;
+  }
+
+  loadChat();
+  window._chatPollTimer = setInterval(loadChat, 2000);
+
+  var sendMsg = async function() {
+    var input = document.getElementById('chatInput');
+    if (!input) return;
+    var content2 = input.value.trim();
+    if (!content2) return;
+    input.value = '';
+    await sb.from('messages').insert({ sender_id: me.id, sender_name: me.name, content: content2 });
+    loadChat();
+  };
+
+  document.getElementById('chatSend').onclick = sendMsg;
+  document.getElementById('chatInput').onkeydown = function(e) { if (e.key === 'Enter') sendMsg(); };
+}
+
+function endChat() { try { if (window._chatPollTimer) { clearInterval(window._chatPollTimer); window._chatPollTimer = null; } } catch(e) {} }
+/* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+
+/* ============================================ */
+/*  聊天室                                       */
+/* ============================================ */
+
 /* ============================================ */
 /*  写评价                                       */
 /* ============================================ */
+function showGuestModal() {
+  const old = document.querySelector('.modal-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center">
+      <h3>🔒</h3>
+      <p style="font-size:16px;font-weight:600;margin:12px 0;color:var(--text)">你还没有登录哦</p>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:20px">登录后才能查看同学们的信息和评价</p>
+      <button class="btn btn-primary" id="gmLogin">🚀 去登录/注册</button>
+      <button class="btn-cancel" id="gmCancel" style="margin-left:10px">再逛逛</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#gmCancel').onclick = (e) => { e.stopPropagation(); overlay.remove(); if (view === 'login') { view = 'hall'; renderHall(); } };
+  overlay.addEventListener('click', e => { if (e.target === overlay) { e.stopPropagation(); overlay.remove(); } });
+  overlay.querySelector('#gmLogin').onclick = (e) => {
+    e.stopPropagation();
+    overlay.remove();
+    me = null; view = 'login'; viewing = null; endSphere(); updateNav(); renderLogin();
+  };
+}
+
+function changePassword() {
+  if (!me) return;
+  const old = document.querySelector('.modal-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div'); overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal" style="text-align:center">'
+    + '<h3>🔑 修改密码</h3>'
+    + '<p style="font-size:13px;color:var(--text-light);margin:12px 0">修改后当前账号将自动退出，需重新登录</p>'
+    + '<input type="password" id="newPwd" placeholder="输入新密码（至少6位）" style="width:100%;padding:12px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px" minlength="6">'
+    + '<input type="password" id="confirmPwd" placeholder="再次输入新密码" style="width:100%;padding:12px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none;margin-bottom:14px" minlength="6">'
+    + '<p id="pwdError" style="color:#d06070;font-size:12px;margin-bottom:12px"></p>'
+    + '<div class="modal-btns" style="justify-content:center">'
+    + '<button class="btn-cancel" id="pwdCancel">取消</button>'
+    + '<button class="btn btn-primary" id="pwdSubmit">确认修改</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#pwdCancel').onclick = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#pwdSubmit').onclick = async () => {
+    var p1 = overlay.querySelector('#newPwd').value;
+    var p2 = overlay.querySelector('#confirmPwd').value;
+    var err = overlay.querySelector('#pwdError');
+    if (!p1 || p1.length < 6) { err.textContent = '密码至少6位'; return; }
+    if (p1 !== p2) { err.textContent = '两次输入的密码不一致'; return; }
+    overlay.querySelector('#pwdSubmit').disabled = true;
+    overlay.querySelector('#pwdSubmit').textContent = '修改中...';
+    var { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) { err.textContent = error.message; overlay.querySelector('#pwdSubmit').disabled = false; overlay.querySelector('#pwdSubmit').textContent = '确认修改'; return; }
+    overlay.remove();
+    alert('密码修改成功！请重新登录。');
+    await sb.auth.signOut();
+    me = null; view = 'login'; viewing = null;
+    endSphere(); updateNav();
+    renderLogin();
+  };
+}
+
 function openWrite() {
   const s = viewing; if (!me || me.id === s.id || s.is_seed && !me) return;
   const old = document.querySelector('.modal-overlay'); if (old) old.remove();
@@ -1104,12 +1605,44 @@ function openWrite() {
         <div><div class="toggle-label">🔒 匿名评价</div><div class="toggle-desc">开启后，TA 不会知道是你写的</div></div>
         <label class="toggle-switch"><input type="checkbox" id="rvAnon" checked><span class="toggle-slider"></span></label>
       </div>
+      <p style="font-size:10px;color:#c0b8c8;text-align:center;margin-top:-12px;margin-bottom:8px;line-height:1.5">
+        🔐 本站基于 RLS 字段级权限隔离策略，匿名评价在 API 响应层即完成身份剥离，管理员亦无法追溯。
+      </p>
+      <div class="toggle-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div class="toggle-label">👁️ 可见范围</div></div>
+          <select id="rvVisibility" style="padding:8px 12px;border-radius:12px;border:1.5px solid #e0d8e8;font-size:13px;font-family:inherit">
+            <option value="public">🌍 所有人可见</option>
+            <option value="selected">👥 部分人可见</option>
+            <option value="private">🔒 仅彼此可见</option>
+          </select>
+        </div>
+        <div id="rvSelectedBox" style="display:none">
+          <div class="toggle-desc" style="margin-bottom:8px">选择可以看到这条评价的人：</div>
+          <div id="rvSelectedList" style="max-height:150px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+      </div>
       <div class="modal-btns">
         <button class="btn-cancel" id="rvCancel">取消</button>
         <button class="btn btn-primary" id="rvSubmit">💌 提交</button>
       </div>
     </div>
   `;
+
+  // 可见范围切换
+  const visSel = overlay.querySelector('#rvVisibility');
+  const selBox = overlay.querySelector('#rvSelectedBox');
+  visSel.onchange = () => { selBox.style.display = visSel.value === 'selected' ? 'block' : 'none'; };
+
+  // 加载学生列表用于"部分可见"选择
+  (async () => {
+    const allStudents = await fetchStudents();
+    const selList = overlay.querySelector('#rvSelectedList');
+    selList.innerHTML = allStudents
+      .filter(st => st.id !== me.id)
+      .map(st => `<label style="font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;background:#f8f4fa;padding:3px 8px;border-radius:10px"><input type="checkbox" value="${st.id}"> ${st.avatar} ${st.name}</label>`)
+      .join('');
+  })();
   document.body.appendChild(overlay);
   overlay.querySelector('#rvCancel').onclick = () => overlay.remove();
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -1119,15 +1652,33 @@ function openWrite() {
     const wk = overlay.querySelector('#rvWeak').value.trim();
     if (!st && !wk) { overlay.querySelector('#rvStr').focus(); return; }
 
+    // 脏话过滤
+    const badWords = ['傻逼','脑残','废物','白痴','弱智','蠢货','猪','狗','死','滚','操你','他妈','尼玛','日你','艹','sb','SB','fuck','shit'];
+    const checkText = (st + wk).toLowerCase();
+    for (const w of badWords) {
+      if (checkText.includes(w.toLowerCase())) {
+        alert('请使用友善的语言，不要出现不文明用语哦～');
+        return;
+      }
+    }
+
     const btn = overlay.querySelector('#rvSubmit');
     btn.disabled = true; btn.textContent = '提交中...';
+
+    const visValue = overlay.querySelector('#rvVisibility').value;
+    let visibleTo = [];
+    if (visValue === 'selected') {
+      overlay.querySelectorAll('#rvSelectedList input:checked').forEach(cb => visibleTo.push(cb.value));
+    }
 
     const { error } = await sb.from('reviews').insert({
       target_id: s.id,
       author_id: me.id,
       strengths: st,
       weaknesses: wk,
-      is_anonymous: overlay.querySelector('#rvAnon').checked
+      is_anonymous: overlay.querySelector('#rvAnon').checked,
+      visibility: visValue,
+      visible_to: visibleTo
     });
 
     if (error) {
@@ -1135,6 +1686,14 @@ function openWrite() {
       btn.disabled = false; btn.textContent = '💌 提交';
       return;
     }
+
+    // 创建通知
+    await sb.from('activities').insert({
+      student_id: s.id,
+      type: 'review',
+      message: (overlay.querySelector('#rvAnon').checked ? '匿名同学' : me.name) + ' 给你写了新评价',
+      related_id: s.id
+    });
 
     overlay.remove();
     await render(); // 刷新个人主页（re-render profile）
@@ -1145,10 +1704,36 @@ function openWrite() {
 /*  照片墙                                       */
 /* ============================================ */
 async function renderPhotos() {
-  // Fetch photos from Supabase
-  const { data: photos, error } = await sb.from('photos')
+  // 1. 从 photos 表获取
+  const { data: dbPhotos, error } = await sb.from('photos')
     .select('*, uploader:uploader_id(name,avatar)')
     .order('created_at', { ascending: false });
+
+  // 2. 从 Storage 获取手动上传的照片
+  let storagePhotos = [];
+  try {
+    const { data: files, error: listError } = await sb.storage.from('yearbook-assets').list('photos', { limit: 100 });
+    if (files && !listError) {
+      storagePhotos = files
+        .filter(f => !f.name.startsWith('.') && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name))
+        .map(f => ({
+          id: 'sp_' + f.name,
+          url: sb.storage.from('yearbook-assets').getPublicUrl('photos/' + f.name).data.publicUrl,
+          caption: f.name,
+          created_at: f.created_at,
+          uploader: null
+        }));
+    }
+  } catch(e) {}
+
+  // 合并：数据库照片 + 存储照片
+  let photos = (dbPhotos || []).map(p => ({...p, source: 'db'}));
+  // 去重（基于 URL）
+  const dbUrls = new Set(photos.map(p => p.url));
+  for (const sp of storagePhotos) {
+    if (!dbUrls.has(sp.url)) photos.push(sp);
+  }
+  photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (error) {
     document.getElementById('view').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><p>加载照片失败</p></div>';
@@ -1174,7 +1759,7 @@ async function renderPhotos() {
   }
 
   document.getElementById('view').innerHTML = `
-    <button class="btn btn-back mb-16" onclick="backToHall()">← 返回大厅</button>
+    <a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none">← 返回大厅</a>
     <div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">📷 我们的照片墙</div>
     <p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:16px">记录我们的青春瞬间</p>
     ${me ? `
@@ -1268,6 +1853,7 @@ async function init() {
     // 2. 监听 auth 状态变化
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
+        stopPresence();
         me = null; view = 'login'; viewing = null;
         await render();
       } else if (event === 'SIGNED_IN' && session) {
@@ -1290,6 +1876,17 @@ async function init() {
 
 document.getElementById('view').innerHTML = '<div class="loading">初始化中...</div>';
 init();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(r) { r.unregister(); });
+    return navigator.serviceWorker.register('/yearbook/sw.js?v=5');
+  }).then(function(reg) {
+    reg.update();
+  });
+}
 </script>
 </body>
 </html>
