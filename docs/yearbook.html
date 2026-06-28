@@ -1611,6 +1611,7 @@ async function renderDMChat() {
     }
     var container = document.getElementById('dmMessages');
     if (!container) return;
+    var dmWasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
     var html = '';
     msgs.forEach(function(m) {
       var isMe = m.sender_id === me.id;
@@ -1625,7 +1626,7 @@ async function renderDMChat() {
         + '<div class="cm-time">' + t + '</div></div></div>';
     });
     container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，发一条吧 ✨</p>';
-    container.scrollTop = container.scrollHeight;
+    if (dmWasAtBottom || msgs.length <= 2) container.scrollTop = container.scrollHeight;
   }
 
   loadDMs();
@@ -1695,6 +1696,8 @@ async function renderChat() {
     _lastChatStamp = latest;
     var container = document.getElementById('chatMessages');
     if (!container) return;
+    // 在 innerHTML 之前记下滚动位置（innerHTML 会重置 scrollTop）
+    var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
     var html = '';
     for (var i = 0; i < msgs.length; i++) {
       var m = msgs[i];
@@ -1709,7 +1712,7 @@ async function renderChat() {
         + '<div class="cm-time">' + t + '</div></div></div>';
     }
     container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，来发第一条吧 ✨</p>';
-    var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+    // 在底部或消息很少时才自动滚到底部，往上翻记录时不打扰
     if (wasAtBottom || msgs.length <= 2) container.scrollTop = container.scrollHeight;
   }
 
