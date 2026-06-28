@@ -1516,7 +1516,7 @@ async function renderDMInbox() {
   msgs.forEach(function(m) {
     var partnerId = m.sender_id === me.id ? m.receiver_id : m.sender_id;
     if (!convos[partnerId]) {
-      convos[partnerId] = { partnerId: partnerId, partnerName: m.sender_id === me.id ? null : m.sender_name, lastMsg: m, unread: 0 };
+      convos[partnerId] = { partnerId: partnerId, partnerName: m.sender_id === me.id ? null : (m.sender_name || null), lastMsg: m, unread: 0 };
     }
     if (m.sender_id === partnerId && !m.read) convos[partnerId].unread++;
     if (m.created_at > convos[partnerId].lastMsg.created_at) convos[partnerId].lastMsg = m;
@@ -1639,7 +1639,7 @@ async function renderDMChat() {
     input.value = '';
     input.disabled = true;
     try {
-      var result = await sb.from('direct_messages').insert({ sender_id: me.id, receiver_id: partnerId, content: content, sender_name: me.name });
+      var result = await sb.from('direct_messages').insert({ sender_id: me.id, receiver_id: partnerId, content: content });
       if (result.error) { console.error('DM send error:', result.error); input.value = content; }
       else loadDMs();
     } catch(e) {
@@ -1685,9 +1685,14 @@ async function renderChat() {
     + '<div class="chat-input-row"><input type="text" id="chatInput" placeholder="输入消息..." maxlength="500" autocomplete="off">'
     + '<button id="chatSend">发送</button></div></div>';
 
+  var _lastChatStamp = '';
   async function loadChat() {
     var resp = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
     var msgs = (resp.data || []).reverse();
+    // 只在有新消息时才更新DOM，避免画面跳动
+    var latest = msgs.length > 0 ? msgs[msgs.length-1].id + '|' + msgs.length : '';
+    if (latest === _lastChatStamp) return;
+    _lastChatStamp = latest;
     var container = document.getElementById('chatMessages');
     if (!container) return;
     var html = '';
@@ -1704,7 +1709,8 @@ async function renderChat() {
         + '<div class="cm-time">' + t + '</div></div></div>';
     }
     container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，来发第一条吧 ✨</p>';
-    container.scrollTop = container.scrollHeight;
+    var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+    if (wasAtBottom || msgs.length <= 2) container.scrollTop = container.scrollHeight;
   }
 
   loadChat();
@@ -1716,7 +1722,11 @@ async function renderChat() {
     var content2 = input.value.trim();
     if (!content2) return;
     input.value = '';
+    input.disabled = true;
     await sb.from('messages').insert({ sender_id: me.id, sender_name: me.name, content: content2 });
+    _lastChatStamp = ''; // 重置，让下一次 loadChat 强制刷新
+    input.disabled = false;
+    input.focus();
     loadChat();
   };
 
