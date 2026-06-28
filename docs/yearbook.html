@@ -340,6 +340,7 @@ body {
 .chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
 .chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
 .chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.cm-read-receipt{font-size:10px;color:#aaa;text-align:right;margin-top:1px}
 .chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
 .chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
 .chat-input-row input:focus{border-color:var(--purple)}
@@ -376,6 +377,7 @@ body {
 .chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
 .chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
 .chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.cm-read-receipt{font-size:10px;color:#aaa;text-align:right;margin-top:1px}
 .chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
 .chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
 .chat-input-row input:focus{border-color:var(--purple)}
@@ -412,6 +414,7 @@ body {
 .chat-msg.me .cm-bubble{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border-bottom-right-radius:4px}
 .chat-msg .cm-name{font-size:11px;color:var(--text-light);margin-bottom:2px}
 .chat-msg .cm-time{font-size:10px;color:#c0b8c8;margin-top:4px;text-align:right}
+.cm-read-receipt{font-size:10px;color:#aaa;text-align:right;margin-top:1px}
 .chat-input-row{display:flex;gap:10px;padding:12px 16px;border-top:1px solid #f0ecf4}
 .chat-input-row input{flex:1;padding:10px 16px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;font-family:inherit;outline:none}
 .chat-input-row input:focus{border-color:var(--purple)}
@@ -945,6 +948,7 @@ async function doLogout() {
 /*  大厅 — 3D 星球                              */
 /* ============================================ */
 let _actCache = {};
+let _reviewCounts = {};  // 所有人的评价数量
 
 async function renderHall() {
   const students = await fetchStudents();
@@ -952,6 +956,10 @@ async function renderHall() {
   const { data: acts } = await sb.from('activities').select('*').order('created_at', { ascending: false }).limit(100);
   _actCache = {};
   if (acts) acts.forEach(a => { if (!_actCache[a.student_id]) _actCache[a.student_id] = []; _actCache[a.student_id].push(a); });
+  // 获取每个同学的评价数量
+  const { data: allRevTargets } = await sb.from('reviews').select('target_id');
+  _reviewCounts = {};
+  (allRevTargets || []).forEach(function(r) { _reviewCounts[r.target_id] = (_reviewCounts[r.target_id] || 0) + 1; });
   document.getElementById('view').innerHTML = `
     ${!me ? `<div style="text-align:center;margin-bottom:16px">
       <div style="display:inline-flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(180,130,210,0.7),rgba(220,140,170,0.7));backdrop-filter:blur(12px);padding:12px 24px;border-radius:30px;color:#fff;font-size:14px;box-shadow:0 4px 24px rgba(180,140,180,0.3);animation:bannerIn 0.6s ease">
@@ -1306,6 +1314,32 @@ function animateSphere(cvs, S, dpr) {
         ctx.font = `bold ${10*p.scale}px "Segoe UI Emoji"`;
         ctx.fillText('🔔', p.sx, p.sy - r*0.8 + 1);
       }
+    }
+
+    // 评价数量徽章（右下角）
+    var rc = _reviewCounts[p.student.id];
+    if (rc && rc > 0) {
+      var bw = Math.max(16 * p.scale, 11);
+      var bh = Math.max(13 * p.scale, 9);
+      var bx = p.sx + r * 0.58;
+      var by = p.sy + r * 0.58;
+      ctx.fillStyle = 'rgba(255,107,107,0.9)';
+      ctx.beginPath();
+      ctx.moveTo(bx - bw/2 + 5*p.scale, by - bh/2);
+      ctx.lineTo(bx + bw/2 - 5*p.scale, by - bh/2);
+      ctx.quadraticCurveTo(bx + bw/2, by - bh/2, bx + bw/2, by - bh/2 + 5*p.scale);
+      ctx.lineTo(bx + bw/2, by + bh/2 - 5*p.scale);
+      ctx.quadraticCurveTo(bx + bw/2, by + bh/2, bx + bw/2 - 5*p.scale, by + bh/2);
+      ctx.lineTo(bx - bw/2 + 5*p.scale, by + bh/2);
+      ctx.quadraticCurveTo(bx - bw/2, by + bh/2, bx - bw/2, by + bh/2 - 5*p.scale);
+      ctx.lineTo(bx - bw/2, by - bh/2 + 5*p.scale);
+      ctx.quadraticCurveTo(bx - bw/2, by - bh/2, bx - bw/2 + 5*p.scale, by - bh/2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      var bfs = Math.max(9 * p.scale, 7);
+      ctx.font = 'bold ' + bfs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(rc > 99 ? '99+' : String(rc), bx, by + 0.5);
     }
 
     if (isMe && !hov) {
@@ -1677,6 +1711,8 @@ let _heartbeatTimer = null;
 async function renderChat() {
   if (!me) { goGuestLogin(); return; }
   endChat();
+  // 记录用户打开聊天室时间（已读功能）
+  sb.from('chat_reads').upsert({ user_id: me.id, last_read_at: new Date().toISOString() }, { onConflict: 'user_id' }).then(function(){}).catch(function(){});
 
   var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#b8e0a0','#c0c0e0','#d0a8d8'];
 
@@ -1690,13 +1726,30 @@ async function renderChat() {
   async function loadChat() {
     var resp = await sb.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
     var msgs = (resp.data || []).reverse();
-    // 只在有新消息时才更新DOM，避免画面跳动
+    // 获取已读状态
+    var readsResp = await sb.from('chat_reads').select('*');
+    var readsMap = {};
+    (readsResp.data || []).forEach(function(r) { readsMap[r.user_id] = new Date(r.last_read_at).getTime(); });
+    // 计算每条自己发消息的已读人数
+    var readCounts = {};
+    for (var j = 0; j < msgs.length; j++) {
+      var m = msgs[j];
+      if (m.sender_id === me.id) {
+        var mt = new Date(m.created_at).getTime();
+        var cnt = 0;
+        for (var uid in readsMap) {
+          if (uid !== me.id && readsMap[uid] >= mt) cnt++;
+        }
+        readCounts[m.id] = cnt;
+      }
+    }
+    // 防抖：消息ID+数量+已读状态 都没变就跳过
     var latest = msgs.length > 0 ? msgs[msgs.length-1].id + '|' + msgs.length : '';
-    if (latest === _lastChatStamp) return;
-    _lastChatStamp = latest;
+    var stamp = latest + '|rd' + JSON.stringify(readCounts);
+    if (stamp === _lastChatStamp) return;
+    _lastChatStamp = stamp;
     var container = document.getElementById('chatMessages');
     if (!container) return;
-    // 在 innerHTML 之前记下滚动位置（innerHTML 会重置 scrollTop）
     var wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
     var html = '';
     for (var i = 0; i < msgs.length; i++) {
@@ -1705,14 +1758,18 @@ async function renderChat() {
       var nm = m.sender_name || '?';
       var ci = nm.charCodeAt(0) % colors.length;
       var t = new Date(m.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      var readBadge = '';
+      if (isMe) {
+        var rdc = readCounts[m.id] || 0;
+        if (rdc > 0) readBadge = '<div class="cm-read-receipt">已读 ' + rdc + '</div>';
+      }
       html += '<div class="chat-msg' + (isMe ? ' me' : '') + '">'
         + '<div class="cm-avatar" style="background:' + colors[ci] + '">' + nm.charAt(nm.length-1) + '</div>'
         + '<div><div class="cm-name">' + (isMe ? '我' : nm) + '</div>'
         + '<div class="cm-bubble">' + m.content.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
-        + '<div class="cm-time">' + t + '</div></div></div>';
+        + '<div class="cm-time">' + t + '</div>' + readBadge + '</div></div>';
     }
     container.innerHTML = html || '<p style="text-align:center;color:#8a7f92;padding:20px">还没有消息，来发第一条吧 ✨</p>';
-    // 在底部或消息很少时才自动滚到底部，往上翻记录时不打扰
     if (wasAtBottom || msgs.length <= 2) container.scrollTop = container.scrollHeight;
   }
 
