@@ -725,6 +725,7 @@ async function renderLogin() {
         <label>密码</label>
         <input type="password" id="loginPwd" placeholder="输入密码" autocomplete="current-password">
         <button class="btn btn-primary" style="width:100%;margin-top:6px" id="authSubmitBtn2" data-label="🔑 登录" onclick="doLogin()">🔑 登录</button>
+        <p style="text-align:center;margin-top:10px;font-size:13px"><a href="javascript:void(0)" onclick="forgotPassword()" style="color:var(--purple)">忘记密码？</a></p>
       </div>
 
       <div class="divider">或者，查看已加入的同学</div>
@@ -856,6 +857,23 @@ async function doRegister() {
   } catch (e) {
     showError('网络错误，请稍后再试');
     setLoading(false);
+  }
+}
+
+async function forgotPassword() {
+  var email = prompt('请输入你的注册邮箱，我们将发送密码重置链接：');
+  if (!email || !email.trim()) return;
+  try {
+    var resp = await sb.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: location.origin + location.pathname + '?reset'
+    });
+    if (resp.error) {
+      alert('发送失败：' + (resp.error.message || '未知错误'));
+    } else {
+            alert('密码重置链接已发送到 ' + email.trim() + '\n\n请检查邮箱（包括垃圾邮件箱），点击链接即可重置密码。');
+    }
+  } catch(e) {
+    alert('发送失败，请稍后再试');
   }
 }
 
@@ -2040,6 +2058,19 @@ async function init() {
 
     // 2. 监听 auth 状态变化
     sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // 密码重置回调：弹出新密码输入框
+        var newPwd = prompt('请输入新密码（至少6位）：');
+        if (newPwd && newPwd.length >= 6) {
+          try {
+            var resp2 = await sb.auth.updateUser({ password: newPwd });
+            if (resp2.error) { alert('重置失败：' + resp2.error.message); }
+            else { alert('密码修改成功！请重新登录。'); me = null; view = 'login'; viewing = null; await render(); }
+          } catch(e) { alert('重置失败，请重试'); }
+        } else if (newPwd) {
+          alert('密码至少需要6位字符');
+        }
+      }
       if (event === 'SIGNED_OUT') {
         stopPresence();
         me = null; view = 'login'; viewing = null;
