@@ -1282,7 +1282,9 @@ function animateSphere(cvs, S, dpr) {
     // 头像 — 用名字首字 + 彩色背景（兼容所有设备）
     const colors = ['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0',
                     '#f0b0b0','#c0c0e0','#b0d0b0','#e0c080','#a0c8e0','#e0a0a0','#90c8b0','#d0a8d8'];
-    const lastName = p.student.name.charAt(p.student.name.length - 1);
+    // 罗春燕是老师，用"师"区分吴燕的"燕"
+    var isTeacher = p.student.id === 's_c010bbc5fcb74f1aa96c3e8f547241bd';
+    const lastName = isTeacher ? '师' : p.student.name.charAt(p.student.name.length - 1);
     const ci = lastName.charCodeAt(0) % colors.length;
     ctx.fillStyle = colors[ci];
     ctx.beginPath(); ctx.arc(p.sx, p.sy, r*0.78, 0, Math.PI*2); ctx.fill();
