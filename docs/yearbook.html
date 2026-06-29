@@ -484,6 +484,7 @@ body {
       </div>
       <button class="btn btn-outline nav-badge" id="btnChat" style="display:none;margin-right:8px" onclick="goChat()">💬 聊天室</button>
       <button class="btn btn-outline" id="btnPhotos" style="display:none;margin-right:8px" onclick="goPhotos();return false;">📷 照片墙</button>
+      <button class="btn btn-outline" id="btnGame" style="display:none;margin-right:8px" onclick="goGame();return false;">🎮 翻牌</button>
       <button class="btn btn-outline nav-badge" id="btnDM" style="display:none;margin-right:8px" onclick="goDMInbox();return false;">📨 私信</button>
       <button class="btn btn-logout" id="btnLogout" style="display:none" onclick="doLogout();return false;">🚪 登出</button>
     </div>
@@ -577,6 +578,7 @@ async function render() {
   if (view === 'login') await renderLogin();
   else if (view === 'hall') await renderHall();
   else if (view === 'profile') await renderProfile();
+  else if (view === 'game') await renderGame();
   else if (view === 'photos') await renderPhotos();
   else if (view === 'chat') await renderChat();
   else if (view === 'dm-inbox') await renderDMInbox();
@@ -587,6 +589,7 @@ function updateNav() {
   const u = document.getElementById('navUser');
   const b = document.getElementById('btnLogout');
   const pb = document.getElementById('btnPhotos');
+  const gb = document.getElementById('btnGame');
   const db = document.getElementById('btnDM');
   const cb = document.getElementById('btnChat');
   // 隐藏安装按钮（已废弃）
@@ -602,12 +605,14 @@ function updateNav() {
     document.getElementById('navName').textContent = me.name;
     b.style.display = '';
     if (pb) pb.style.display = '';
+    if (gb) gb.style.display = '';
     if (db) db.style.display = '';
     if (cb) cb.style.display = ''; checkUnreadDM();
   } else {
     u.style.display = 'none'; u.onclick = null;
     b.style.display = 'none';
     if (pb) pb.style.display = 'none';
+    if (gb) gb.style.display = 'none';
     if (db) db.style.display = 'none';
     if (cb) cb.style.display = 'none';
   }
@@ -973,14 +978,55 @@ async function renderHall() {
         <span style="font-size:22px">✨</span>
       </div>
     </div>` : ''}
-    <div class="section-title text-center" style="font-size:18px;font-weight:700;margin-bottom:16px">🌌 我们的星空 (${students.length}人)</div>
+    <div class="section-title text-center" style="font-size:18px;font-weight:700;margin-bottom:8px">🌌 我们的星空 (${students.length}人)</div>
+    <div style="text-align:center;margin-bottom:12px" class="hall-list-toggle-wrap">
+      <button class="btn btn-outline" id="btnListView" style="font-size:12px;padding:6px 16px" onclick="window._toggleListView()">📋 列表模式</button>
+      <button class="btn btn-outline" id="btnSphereView" style="font-size:12px;padding:6px 16px;display:none" onclick="window._toggleListView()">🌌 星球模式</button>
+    </div>
     <div class="hall-scene" id="hallScene">
       <div class="sphere-wrap" id="sphereWrap">
         <canvas id="sphereCvs"></canvas>
       </div>
     </div>
     ${me ? '<p class="hall-hint">✨ 鼠标悬停头像星球会停下，点击进入 TA 的主页</p>' : ''}
+    <div id="hallListView" style="display:none;padding:8px"></div>
   `;
+  window._toggleListView = function() {
+    var scene = document.getElementById('hallScene');
+    var list = document.getElementById('hallListView');
+    var btnL = document.getElementById('btnListView');
+    var btnS = document.getElementById('btnSphereView');
+    if (!scene || !list) return;
+    var isList = list.style.display !== 'none';
+    if (isList) {
+      scene.style.display = ''; list.style.display = 'none';
+      if (btnL) btnL.style.display = ''; if (btnS) btnS.style.display = 'none';
+      if (!window._savedStudents) return;
+      requestAnimationFrame(function() { requestAnimationFrame(function() { initSphere(window._savedStudents); }); });
+    } else {
+      endSphere();
+      scene.style.display = 'none'; list.style.display = '';
+      if (btnL) btnL.style.display = 'none'; if (btnS) btnS.style.display = '';
+    }
+  };
+  // 构建名单视图
+  var colors2 = ['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#c0c0e0','#b0d0b0','#e0c080'];
+  var listHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;text-align:center">';
+  students.forEach(function(s) {
+    var ci2 = s.name.charCodeAt(s.name.length-1) % colors2.length;
+    var revCount = _reviewCounts[s.id] || 0;
+    var badge = revCount > 0 ? '<span style="position:absolute;top:-2px;right:-2px;background:#ff6b6b;color:#fff;border-radius:10px;font-size:9px;padding:0 4px;line-height:14px">'+revCount+'</span>' : '';
+    listHTML += '<div onclick="openProfile(\''+s.id+'\');return false" style="cursor:pointer;position:relative;padding:6px">'
+      + '<div style="position:relative;display:inline-block">'
+      + '<div style="width:44px;height:44px;border-radius:50%;background:'+colors2[ci2]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin:0 auto">'+s.name.charAt(s.name.length-1)+'</div>'+badge+'</div>'
+      + '<div style="font-size:11px;color:var(--text);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.name+'</div>'
+      + '</div>';
+  });
+  listHTML += '</div>';
+  setTimeout(function() {
+    var lv = document.getElementById('hallListView');
+    if (lv) { lv.innerHTML = listHTML; window._savedStudents = students; }
+  }, 10);
   const glb2 = document.getElementById('guestLoginBtn2');
   if (glb2) glb2.onclick = () => { me = null; view = 'login'; viewing = null; endSphere(); updateNav(); renderLogin(); };
   if (me) startPresence();
@@ -1720,9 +1766,104 @@ async function renderDMChat() {
   document.getElementById('dmInput').onkeydown = function(e) { if (e.key === 'Enter') sendDM(); };
 }
 
+
+/* ============================================ */
+/*  翻牌记忆小游戏                                */
+/* ============================================ */
+function renderGame() {
+  var colors = ['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0',
+                '#f0b0b0','#c0c0e0','#b0d0b0','#e0c080','#a0c8e0','#e0a0a0','#90c8b0','#d0a8d8'];
+  // 取一些同学的名字末字作为卡面
+  var names = ['陆','冬','莉','石','新','佑','杨','维','烨','国','浩','燕','吴','苏','芸','香'].slice(0,8);
+  // 扩展成16张（每张出现2次）
+  var cards = [];
+  names.forEach(function(n,i) { cards.push({id:i, letter:n, color:colors[i*2]}); cards.push({id:i, letter:n, color:colors[i*2]}); });
+  // 洗牌
+  for (var i = cards.length-1; i>0; i--) { var j=Math.floor(Math.random()*(i+1)); var t=cards[i]; cards[i]=cards[j]; cards[j]=t; }
+
+  var flipped = [];  // 当前翻开的卡 index
+  var matched = [];  // 已匹配的卡 id
+  var steps = 0;
+  var timer = 0;
+  var timerInterval = null;
+  var lock = false;
+
+  function startTimer() {
+    if (timerInterval) return;
+    timerInterval = setInterval(function() { timer++; var el=document.getElementById('gameTimer'); if(el) el.textContent='⏱ '+timer+'s'; }, 1000);
+  }
+
+  function flipCard(idx) {
+    if (lock) return;
+    if (flipped.length >= 2) return;
+    if (flipped.indexOf(idx) >= 0) return;
+    if (matched.indexOf(cards[idx].id) >= 0) return;
+    startTimer();
+    flipped.push(idx);
+    var el = document.getElementById('gc'+idx);
+    if (el) { el.classList.add('flipped'); el.style.background = cards[idx].color; }
+
+    if (flipped.length === 2) {
+      steps++;
+      var se = document.getElementById('gameSteps'); if (se) se.textContent = '👣 '+steps+'步';
+      var a = cards[flipped[0]], b = cards[flipped[1]];
+      if (a.id === b.id) {
+        // 匹配成功
+        matched.push(a.id);
+        flipped = [];
+        if (matched.length === names.length) {
+          // 游戏完成
+          clearInterval(timerInterval);
+          var best = parseInt(localStorage.getItem('_gameBest') || '9999');
+          var score = steps + timer;
+          if (score < best) { localStorage.setItem('_gameBest', score); best = score; }
+          setTimeout(function() {
+            alert('🎉 恭喜！\n用时 '+timer+' 秒 | 步数 '+steps+' 步\n评分: '+score+' (最佳: '+(best===score?score:best)+')');
+          }, 400);
+        }
+      } else {
+        // 不匹配，翻回去
+        lock = true;
+        setTimeout(function() {
+          flipped.forEach(function(fi) {
+            var el2 = document.getElementById('gc'+fi);
+            if (el2) { el2.classList.remove('flipped'); el2.style.background = ''; }
+          });
+          flipped = [];
+          lock = false;
+        }, 700);
+      }
+    }
+  }
+
+  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="backToHall();return false;">← 返回大厅</a>'
+    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🃏 翻牌记忆</div>'
+    + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:8px">翻到两张相同同学即匹配成功</p>'
+    + '<div style="display:flex;gap:16px;justify-content:center;margin-bottom:16px;font-size:14px;font-weight:600">'
+    + '<span id="gameTimer">⏱ 0s</span><span id="gameSteps">👣 0步</span></div>'
+    + '<div class="game-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:320px;margin:0 auto">';
+
+  for (var i = 0; i < cards.length; i++) {
+    html += '<div class="game-card" id="gc'+i+'" onclick="window._flipCard('+i+')" style="aspect-ratio:1;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;box-shadow:0 2px 12px rgba(100,100,200,0.2)">'
+      + '<span class="game-card-back" style="font-size:24px">?</span>'
+      + '<span class="game-card-front" style="display:none;font-size:28px;font-weight:700;color:#fff">' + cards[i].letter + '</span>'
+      + '</div>';
+  }
+  html += '</div>';
+
+  document.getElementById('view').innerHTML = html;
+  window._flipCard = function(i) { flipCard(i); };
+
+  // CSS 注入
+  var style = document.createElement('style');
+  style.textContent = '.game-card:hover{transform:scale(1.05)}.game-card.flipped .game-card-back{display:none}.game-card.flipped .game-card-front{display:block}';
+  document.head.appendChild(style);
+}
+
 function goChat() { viewing = null; view = 'chat'; render(); }
 function goDMInbox() { viewing = null; view = 'dm-inbox'; render(); }
 
+function goGame() { viewing = null; view = 'game'; render(); }
 function goPhotos() { viewing = null; view = 'photos'; render(); }
 async function backToHall() { viewing = null; view = 'hall'; await render(); }
 
