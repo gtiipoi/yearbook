@@ -1472,18 +1472,23 @@ async function renderProfile() {
       if (mua && mf) {
         mua.onclick = () => mf.click();
         mf.onchange = async (e) => {
-          const file = e.target.files[0]; if (!file) return;
-          if (file.size > 10*1024*1024) { alert('文件不能超过 10MB'); return; }
-          const isVideo = file.type.startsWith('video/');
+          const files = e.target.files; if (!files || files.length === 0) return;
           mua.innerHTML = '<div class="ua-icon">⏳</div><div class="ua-text">上传中...</div>';
-          const fn = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-          const { error: upErr } = await sb.storage.from('yearbook-assets').upload('media/' + fn, file);
-          if (upErr) { alert('上传失败: '+upErr.message); loadMyMedia(); return; }
-          const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('media/' + fn);
-          await sb.from('photos').insert({ uploader_id: me.id, student_id: me.id, url: urlData.publicUrl, caption: isVideo ? '🎬 视频' : '📷 照片', type: isVideo ? 'video' : 'photo' });
-          // 创建通知
-          await sb.from('activities').insert({ student_id: me.id, type: isVideo ? 'video' : 'photo', message: me.name + ' 上传了新的' + (isVideo ? '视频' : '照片'), related_id: me.id });
+          let done = 0;
+          for (let fi = 0; fi < files.length; fi++) {
+            const file = files[fi];
+            if (file.size > 10*1024*1024) { alert(file.name + ' 超过 10MB，已跳过'); done++; continue; }
+            const isVideo = file.type.startsWith('video/');
+            const fn = Date.now() + '_' + fi + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const { error: upErr } = await sb.storage.from('yearbook-assets').upload('media/' + fn, file);
+            if (upErr) { console.error('upload error:', upErr); done++; continue; }
+            const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('media/' + fn);
+            await sb.from('photos').insert({ uploader_id: me.id, student_id: me.id, url: urlData.publicUrl, caption: isVideo ? '🎬 视频' : '📷 照片', type: isVideo ? 'video' : 'photo' });
+            await sb.from('activities').insert({ student_id: me.id, type: isVideo ? 'video' : 'photo', message: me.name + ' 上传了新的' + (isVideo ? '视频' : '照片'), related_id: me.id });
+            done++;
+          }
           loadMyMedia();
+          mua.innerHTML = '<div class="ua-icon">📤</div><div class="ua-text">上传了 ' + done + ' 个文件</div>';
         };
       }
     }, 100);
@@ -1508,14 +1513,13 @@ async function loadMyMedia() {
     const isVideo = m.type === 'video';
     return `<div class="photo-card" style="position:relative">
       ${isVideo ? `<video src="${m.url}" controls style="width:100%;height:180px;object-fit:cover;display:block"></video>` : `<img src="${m.url}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block">`}
-      
+      <button onclick="deleteMedia('${m.id}')" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;font-size:14px;cursor:pointer;line-height:24px;text-align:center" title="删除">✕</button>
     </div>`;
   }).join('') + '</div>';
 }
 
 async function deleteMedia(id) {
   if (!confirm('确定删除？')) return;
-  // 从 storage 删除
   const { data: media } = await sb.from('photos').select('url').eq('id', id).single();
   if (media) {
     const path = media.url.split('/').slice(-2).join('/');
@@ -1523,6 +1527,16 @@ async function deleteMedia(id) {
   }
   await sb.from('photos').delete().eq('id', id);
   loadMyMedia();
+}
+async function deletePhoto(id) {
+  if (!confirm('确定删除这张照片？')) return;
+  const { data: photo } = await sb.from('photos').select('url').eq('id', id).single();
+  if (photo) {
+    const path = photo.url.split('/').slice(-2).join('/');
+    try { await sb.storage.from('yearbook-assets').remove([path]); } catch(e) {}
+  }
+  await sb.from('photos').delete().eq('id', id);
+  renderPhotos();
 }
 
 
@@ -2025,8 +2039,10 @@ async function renderPhotos() {
     photosHTML = '<div class="photo-grid">' + photos.map(p => {
       const t = new Date(p.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const uploaderName = p.uploader ? p.uploader.name : '未知';
-      return `<div class="photo-card">
+      const canDelete = me && p.uploader_id === me.id;
+      return `<div class="photo-card" style="position:relative">
         <img src="${p.url}" alt="${p.caption||''}" loading="lazy">
+        ${canDelete ? `<button onclick="deletePhoto('${p.id}')" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;font-size:14px;cursor:pointer;line-height:24px;text-align:center;z-index:2" title="删除">✕</button>` : ''}
         <div class="pc-info">
           ${p.caption ? `<div class="pc-caption">${p.caption}</div>` : ''}
           <div class="pc-uploader">📤 ${uploaderName}</div>
@@ -2057,38 +2073,36 @@ async function renderPhotos() {
     if (uploadArea && fileInput) {
       uploadArea.onclick = () => fileInput.click();
       fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        // 限制 5MB
-        if (file.size > 5 * 1024 * 1024) { alert('照片不能超过 5MB'); return; }
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
 
-        const caption = prompt('给照片加个描述（可选）：');
+        const caption = files.length === 1 ? prompt('给照片加个描述（可选）：') : '';
         uploadArea.innerHTML = '<div class="ua-icon">⏳</div><div class="ua-text">上传中...</div>';
 
-        const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        
-        // 上传到 Supabase Storage
-        const { data: uploadData, error: uploadError } = await sb.storage
-          .from('yearbook-assets')
-          .upload('photos/' + fileName, file);
+        let done = 0;
+        for (let fi = 0; fi < files.length; fi++) {
+          const file = files[fi];
+          if (file.size > 5 * 1024 * 1024) { alert(file.name + ' 超过 5MB，已跳过'); done++; continue; }
 
-        if (uploadError) {
-          alert('上传失败: ' + uploadError.message);
-          renderPhotos();
-          return;
+          const fileName = Date.now() + '_' + fi + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+          const { error: uploadError } = await sb.storage
+            .from('yearbook-assets')
+            .upload('photos/' + fileName, file);
+
+          if (uploadError) { console.error('upload error:', uploadError); done++; continue; }
+
+          const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('photos/' + fileName);
+
+          await sb.from('photos').insert({
+            uploader_id: me.id,
+            url: urlData.publicUrl,
+            caption: caption || ''
+          });
+          done++;
         }
 
-        // 获取公开 URL
-        const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('photos/' + fileName);
-        
-        // 保存到 photos 表
-        await sb.from('photos').insert({
-          uploader_id: me.id,
-          url: urlData.publicUrl,
-          caption: caption || ''
-        });
-
-        // 刷新照片墙
+        uploadArea.innerHTML = '<div class="ua-icon">📤</div><div class="ua-text">上传了 ' + done + ' 张照片</div>';
         await renderPhotos();
       };
     }
