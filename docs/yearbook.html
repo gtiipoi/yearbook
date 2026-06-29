@@ -1454,7 +1454,7 @@ async function renderProfile() {
       <div class="upload-area" id="mediaUploadArea" style="margin-bottom:16px">
         <div class="ua-icon">📤</div>
         <div class="ua-text">点击上传照片/视频（最大10MB）</div>
-        <input type="file" id="mediaFile" accept="image/*,video/*">
+        <input type="file" id="mediaFile" accept="image/*,video/*" multiple>
       </div>
       <div id="myMediaGrid"></div>
     </div>` : ''}
@@ -2001,30 +2001,7 @@ async function renderPhotos() {
     .select('*, uploader:uploader_id(name,avatar)')
     .order('created_at', { ascending: false });
 
-  // 2. 从 Storage 获取手动上传的照片
-  let storagePhotos = [];
-  try {
-    const { data: files, error: listError } = await sb.storage.from('yearbook-assets').list('photos', { limit: 100 });
-    if (files && !listError) {
-      storagePhotos = files
-        .filter(f => !f.name.startsWith('.') && /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(f.name))
-        .map(f => ({
-          id: 'sp_' + f.name,
-          url: sb.storage.from('yearbook-assets').getPublicUrl('photos/' + f.name).data.publicUrl,
-          caption: f.name,
-          created_at: f.created_at,
-          uploader: null
-        }));
-    }
-  } catch(e) {}
-
-  // 合并：数据库照片 + 存储照片
   let photos = (dbPhotos || []).map(p => ({...p, source: 'db'}));
-  // 去重（基于 URL）
-  const dbUrls = new Set(photos.map(p => p.url));
-  for (const sp of storagePhotos) {
-    if (!dbUrls.has(sp.url)) photos.push(sp);
-  }
   photos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
   if (error) {
@@ -2060,7 +2037,7 @@ async function renderPhotos() {
     <div class="upload-area" id="uploadArea">
       <div class="ua-icon">📤</div>
       <div class="ua-text">点击上传照片</div>
-      <input type="file" id="photoFile" accept="image/*">
+      <input type="file" id="photoFile" accept="image/*" multiple>
     </div>
     ` : '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">登录后即可上传照片</p>'}
     ${photosHTML}
