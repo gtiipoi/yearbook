@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.crossroads_votes (
 ALTER TABLE public.crossroads_votes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can read votes" ON public.crossroads_votes;
 CREATE POLICY "Anyone can read votes" ON public.crossroads_votes FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Users can insert votes" ON public.crossroads_votes FOR INSERT
+DROP POLICY IF EXISTS "Users can insert votes" ON public.crossroads_votes;
+CREATE POLICY "Users can insert votes" ON public.crossroads_votes FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM public.students WHERE id = voter_id AND auth_id = auth.uid()));
 
 -- 热搜点赞
@@ -27,5 +28,6 @@ CREATE TABLE IF NOT EXISTS public.hotsearch_likes (
 ALTER TABLE public.hotsearch_likes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can read likes" ON public.hotsearch_likes;
 CREATE POLICY "Anyone can read likes" ON public.hotsearch_likes FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Users can insert likes" ON public.hotsearch_likes FOR INSERT
+DROP POLICY IF EXISTS "Users can insert likes" ON public.hotsearch_likes;
+CREATE POLICY "Users can insert likes" ON public.hotsearch_likes FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM public.students WHERE id = user_id AND auth_id = auth.uid()));
