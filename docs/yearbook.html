@@ -1776,8 +1776,6 @@ function renderGame() {
   if (_gameMode === 'quiz') { renderQuiz(); return; }
   if (_gameMode === 'memory') { renderMemory(); return; }
   if (_gameMode === 'truthdare') { renderTruthDare(); return; }
-  if (_gameMode === 'timeline') { renderTimeline(); return; }
-  if (_gameMode === 'pairs') { renderPairs(); return; }
   renderGameLobby();
 }
 
@@ -1796,11 +1794,7 @@ function renderGameLobby() {
     + '<div style="font-size:36px">⚡</div><div><div style="font-weight:700;font-size:16px">翻牌竞速</div><div style="font-size:12px;opacity:0.85">记忆翻牌，比谁更快</div></div></div>'
     + '<div onclick="_gameMode=\'truthdare\';renderGame()" class="game-lobby-card" style="background:linear-gradient(135deg,#e8a0d0,#80d0c0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
     + '<div style="font-size:36px">🎰</div><div><div style="font-weight:700;font-size:16px">真心话大冒险</div><div style="font-size:12px;opacity:0.85">随机同学+随机评价+随机挑战</div></div></div>'
-    + '<div onclick="_gameMode=\'timeline\';renderGame()" class="game-lobby-card" style="background:linear-gradient(135deg,#ffd980,#ff9eb0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
-    + '<div style="font-size:36px">📅</div><div><div style="font-weight:700;font-size:16px">班级大事件排序</div><div style="font-size:12px;opacity:0.85">回顾真实班级历史，按时间排列</div></div></div>'
-    + '<div onclick="_gameMode=\'pairs\';renderGame()" class="game-lobby-card" style="background:linear-gradient(135deg,#a0c8e0,#c0c0e0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
-    + '<div style="font-size:36px">💞</div><div><div style="font-weight:700;font-size:16px">最佳配对</div><div style="font-size:12px;opacity:0.85">看看班上谁和谁最有缘</div></div></div>'
-    + '</div>';
++ '</div>';
   document.getElementById('view').innerHTML = html;
 }
 
@@ -1871,135 +1865,6 @@ async function endQ(){
 }
 
 /* ============================================ */
-/*  游戏E: 班级大事件排序                         */
-async function renderTimeline() {
-  _gameMode = 'timeline';
-
-  // 收集真实事件
-  var events = [];
-  var sResp = await sb.from('students').select('id,name,created_at').order('created_at',{ascending:true}).limit(1);
-  if (sResp.data && sResp.data[0]) events.push({text:sResp.data[0].name+' 注册加入纪念册',time:new Date(sResp.data[0].created_at).getTime()});
-
-  var sResp2 = await sb.from('students').select('id,name,created_at').order('created_at',{ascending:false}).limit(1);
-  if (sResp2.data && sResp2.data[0]) events.push({text:sResp2.data[0].name+' 加入大家庭',time:new Date(sResp2.data[0].created_at).getTime()});
-
-  var rResp = await sb.from('reviews').select('author_id,target_id,created_at').order('created_at',{ascending:true}).limit(1);
-  if (rResp.data && rResp.data[0]) {
-    var aResp = await sb.from('students').select('name').eq('id',rResp.data[0].author_id).single();
-    var tResp = await sb.from('students').select('name').eq('id',rResp.data[0].target_id).single();
-    events.push({text:(aResp.data?aResp.data.name:'?')+' 写了第一条评价给 '+(tResp.data?tResp.data.name:'?'),time:new Date(rResp.data[0].created_at).getTime()});
-  }
-
-  var pResp = await sb.from('photos').select('uploader_id,created_at').order('created_at',{ascending:true}).limit(1);
-  if (pResp.data && pResp.data[0]) {
-    var upResp = await sb.from('students').select('name').eq('id',pResp.data[0].uploader_id).single();
-    events.push({text:(upResp.data?upResp.data.name:'?')+' 上传了第一张照片',time:new Date(pResp.data[0].created_at).getTime()});
-  }
-
-  var rcResp = await sb.from('reviews').select('target_id',{count:'exact',head:true});
-  events.push({text:'累计评价突破 '+(rcResp.count||0)+' 条',time:Date.now()});
-
-  if (events.length < 3) { events.push({text:'纪念册正式上线！',time:new Date('2026-06-27').getTime()}); }
-
-  // 用 sort 命名冲突，直接用 compare
-  var correct = events.slice().sort(function(a,b){return a.time-b.time;});
-  var shuffled = events.slice();
-  for(var i=shuffled.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=shuffled[i];shuffled[i]=shuffled[j];shuffled[j]=t;}
-
-  var btns = [];
-  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    + '<div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">📅 班级大事件排序</div>'
-    + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:8px">按时间从早到晚排列（点击相邻两个交换位置）</p>'
-    + '<div style="max-width:380px;margin:0 auto" id="timelineContainer">';
-  shuffled.forEach(function(e,i){
-    html += '<div onclick="window._swapTimeline('+i+')" id="tl'+i+'" style="background:rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s">'
-      + '<span style="font-size:20px">'+(i+1)+'</span>'
-      + '<span style="font-size:14px;color:var(--text)">'+e.text+'</span>'
-      + '</div>';
-    btns.push(e);
-  });
-  html += '</div><button class="btn btn-primary" id="timelineCheck" onclick="window._checkTimeline()" style="display:block;margin:16px auto;width:200px">✅ 检查答案</button>';
-  document.getElementById('view').innerHTML = html;
-  window._timelineData = {btns:btns,correct:correct};
-  var selected = -1;
-  window._swapTimeline = function(i) {
-    if (selected < 0) { selected = i; var el=document.getElementById('tl'+i); if(el)el.style.border='2px solid var(--purple)'; return; }
-    if (selected === i) { selected=-1; var el=document.getElementById('tl'+i); if(el)el.style.border=''; return; }
-    var t=btns[i]; btns[i]=btns[selected]; btns[selected]=t;
-    selected = -1;
-    // Re-render
-    var html2=''; btns.forEach(function(e,j){html2+='<div onclick="window._swapTimeline('+j+')" id="tl'+j+'" style="background:rgba(255,255,255,0.8);border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s"><span style="font-size:20px">'+(j+1)+'</span><span style="font-size:14px;color:var(--text)">'+e.text+'</span></div>';});
-    var cont=document.getElementById('timelineContainer'); if(cont)cont.innerHTML=html2;
-  };
-  window._checkTimeline = function() {
-    var allCorrect = true;
-    for(var k=0;k<btns.length;k++){
-      if(btns[k].text !== correct[k].text){allCorrect=false;break;}
-    }
-    if(allCorrect){
-      var score=1000;
-      try{sb.from('game_scores').insert({user_id:me.id,game:'timeline',score:score,detail:'all correct'}).then(function(){});}catch(e){}
-      alert('🎉 全对！得分 '+score);
-    } else {
-      alert('❌ 顺序不对，再试试！');
-    }
-    renderTimeline();
-  };
-}
-
-/*  游戏F: 最佳配对                               */
-async function renderPairs() {
-  _gameMode = 'pairs';
-  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:8px">💞 最佳配对</div>'
-    + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:16px">由真实评价数据生成</p>'
-    + '<div style="text-align:center;padding:20px;color:var(--text-light)" id="pairsLoading">分析中...</div>'
-    + '<div id="pairsResult" style="max-width:400px;margin:0 auto"></div>';
-  document.getElementById('view').innerHTML = html;
-  // 分析互评数据
-  var revResp = await sb.from('reviews').select('author_id,target_id,strengths,weaknesses').limit(200);
-  var revs = revResp.data || [];
-  var sResp = await sb.from('students').select('id,name').limit(52);
-  var sMap = {}; (sResp.data||[]).forEach(function(s){sMap[s.id]=s;});
-
-  var pairs = {};
-  revs.forEach(function(r){
-    var key = [r.author_id,r.target_id].sort().join('|');
-    if (!pairs[key]) pairs[key] = {a:r.author_id,b:r.target_id,count:0,totalLen:0,compliments:[]};
-    pairs[key].count++;
-    pairs[key].totalLen += (r.strengths||'').length + (r.weaknesses||'').length;
-    if ((r.strengths||'').match(/帅|美|厉害|棒|爱|喜欢|可爱|强|温柔/)) pairs[key].compliments.push(r.strengths);
-  });
-  var sorted = Object.values(pairs).filter(function(p){return p.count>=2;}).sort(function(a,b){return b.count-a.count;}).slice(0,5);
-
-  var results = [];
-  sorted.forEach(function(p,i){
-    var an = sMap[p.a]?sMap[p.a].name:'?'; var bn = sMap[p.b]?sMap[p.b].name:'?';
-    var label = '';
-    if (i===0) label = '🏆 最佳CP';
-    else if (p.compliments.length>=3) label = '💕 甜蜜互夸';
-    else if (p.totalLen > 200) label = '📝 最走心';
-    else label = '🤝 老铁组合';
-    results.push({a:an,b:bn,label:label,count:p.count,compliments:p.compliments.length});
-  });
-
-  if (results.length===0) {
-    document.getElementById('pairsResult').innerHTML = '<p style="text-align:center;color:var(--text-light)">数据还不够，多写点互评吧~</p>';
-    return;
-  }
-  var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0'];
-  var resultHTML = '';
-  results.forEach(function(p,i){
-    resultHTML += '<div style="background:rgba(255,255,255,0.8);border-radius:16px;padding:18px;margin-bottom:12px;text-align:center;border-left:4px solid '+colors[i]+'">'
-      + '<div style="font-size:13px;font-weight:700;color:'+colors[i]+';margin-bottom:4px">'+p.label+'</div>'
-      + '<div style="font-size:18px;font-weight:700;color:var(--text)">'+p.a+' ❤️ '+p.b+'</div>'
-      + '<div style="font-size:12px;color:var(--text-light);margin-top:4px">互评 '+p.count+' 次</div>'
-      + '</div>';
-  });
-  document.getElementById('pairsLoading').style.display = 'none';
-  document.getElementById('pairsResult').innerHTML = resultHTML;
-}
-
 /*  游戏D: 真心话大冒险                           */
 /* ============================================ */
 var _tdState = 'idle'; var _tdTimer = null; var _tdIdx = 0;
