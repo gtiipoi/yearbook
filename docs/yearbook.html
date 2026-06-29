@@ -2037,7 +2037,7 @@ async function renderPhotos() {
     <div class="upload-area" id="uploadArea">
       <div class="ua-icon">📤</div>
       <div class="ua-text">点击上传照片</div>
-      <input type="file" id="photoFile" accept="image/*" multiple>
+      <input type="file" id="photoFile" accept="image/*,video/*" multiple>
     </div>
     ` : '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">登录后即可上传照片</p>'}
     ${photosHTML}
@@ -2069,12 +2069,14 @@ async function renderPhotos() {
 
           if (uploadError) { console.error('upload error:', uploadError); done++; continue; }
 
+          const isVideo = file.type.startsWith('video/');
           const { data: urlData } = sb.storage.from('yearbook-assets').getPublicUrl('photos/' + fileName);
 
           await sb.from('photos').insert({
             uploader_id: me.id,
             url: urlData.publicUrl,
-            caption: caption || ''
+            caption: caption || (isVideo ? '🎬 视频' : '📷 照片'),
+            type: isVideo ? 'video' : 'photo'
           });
           done++;
         }
