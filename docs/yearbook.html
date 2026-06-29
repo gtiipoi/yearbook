@@ -1805,178 +1805,69 @@ function renderGameLobby() {
 }
 
 /* ============================================ */
-/*  游戏A: 猜同学PK (写评价→猜评价)                */
-var _quizStep = 'write';
-var _quizTarget = null;
-var _quizScore2 = 0;
-var _quizTotal = 0;
+/*  游戏A: 猜同学PK                              */
+var _quizIdx = 0; var _quizScore = 0; var _quizTimer = 0; var _quizInterval = null;
+var _quizData2 = [];
 
 async function renderQuiz() {
   _gameMode = 'quiz';
   if (!me) { goGuestLogin(); return; }
-  _quizStep = 'write'; _quizScore2 = 0; _quizTotal = 0;
-  // 随机选3个同学
+  var resp = await sb.from('reviews').select('id,strengths,target_id').not('strengths','is',null).neq('strengths','').order('created_at',{ascending:false}).limit(60);
+  var allRevs = (resp.data||[]).filter(function(r){return r.strengths && r.strengths.length>4;});
   var sResp = await sb.from('students').select('id,name').limit(52);
-  var students = (sResp.data||[]).filter(function(s){return s.name.length>=2 && s.id !== me.id;});
-  var options = [];
-  var used = {};
-  while (options.length < 3) {
-    var rnd = students[Math.floor(Math.random()*students.length)];
-    if (!used[rnd.id]) { used[rnd.id]=true; options.push(rnd); }
+  var students = sResp.data||[]; var sMap={}; students.forEach(function(s){sMap[s.id]=s;});
+  _quizData2=[]; _quizIdx=0; _quizScore=0; _quizTimer=0;
+  for(var i=0;i<Math.min(10,allRevs.length);i++){
+    var rev=allRevs[Math.floor(Math.random()*allRevs.length)];
+    var correct=sMap[rev.target_id]; if(!correct){i--;continue;}
+    var opts=[correct]; var used={}; used[correct.id]=true;
+    while(opts.length<4){var rnd=students[Math.floor(Math.random()*students.length)];if(!used[rnd.id]){used[rnd.id]=true;opts.push(rnd);}}
+    for(var j=opts.length-1;j>0;j--){var k=Math.floor(Math.random()*(j+1));var t=opts[j];opts[j]=opts[k];opts[k]=t;}
+    _quizData2.push({review:rev,correct:correct,options:opts});
   }
-  var colors = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0'];
-  // 阶段1: 写评价
-  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    + '<div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">✍️ 写评价给TA</div>'
-    + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:4px">选一个同学，给TA写一条真实评价</p>'
-    + '<p style="text-align:center;font-size:11px;color:#ff6b6b;margin-bottom:12px">⚠ 此评价不匿名，猜对后会显示你的名字</p>'
-    + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">';
-  options.forEach(function(s) {
-    var ci = s.name.charCodeAt(s.name.length-1) % colors.length;
-    html += '<div onclick="window._quizPickWriter(\''+s.id+'\')" style="cursor:pointer;background:rgba(255,255,255,0.8);border-radius:14px;padding:14px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.2s">'
-      + '<div style="width:44px;height:44px;border-radius:50%;background:'+colors[ci]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700">'+s.name.charAt(s.name.length-1)+'</div>'
-      + '<span style="font-size:13px;font-weight:600;color:var(--text)">'+s.name+'</span></div>';
-  });
-  html += '</div><div id="quizWriteForm" style="display:none;max-width:360px;margin:0 auto">'
-    + '<textarea id="quizStrengths" placeholder="优点..." maxlength="200" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e0d8e8;font-size:13px;resize:vertical;font-family:inherit;margin-bottom:8px;min-height:60px"></textarea>'
-    + '<textarea id="quizWeaknesses" placeholder="缺点/待改进..." maxlength="200" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e0d8e8;font-size:13px;resize:vertical;font-family:inherit;margin-bottom:12px;min-height:40px"></textarea>'
-    + '<button class="btn btn-primary" id="quizSubmit" onclick="window._quizSubmit()" style="width:100%">📝 提交评价</button>'
-    + '</div>';
-  document.getElementById('view').innerHTML = html;
-  window._quizPickWriter = function(sid) {
-    _quizTarget = sid;
-    var form = document.getElementById('quizWriteForm');
-    if (form) form.style.display = '';
-  };
-  window._quizSubmit = async function() {
-    var st = document.getElementById('quizStrengths'); var wk = document.getElementById('quizWeaknesses');
-    if (!st || !st.value.trim()) { alert('请至少写一句优点'); return; }
-    await sb.from('game_reviews').insert({writer_id:me.id,target_id:_quizTarget,strengths:st.value.trim(),weaknesses:wk.value.trim()});
-    alert('评价已保存！现在去看看别人写的评价，猜猜是给谁的~');
-    _quizStep = 'guess';
-    showQuizGuess();
-  };
+  showQ();
 }
 
-async function showQuizGuess() {
-  // 获取未揭露的评价
-  var resp = await sb.from('game_reviews').select('*').eq('guessed',false).order('created_at',{ascending:false}).limit(20);
-  var all = resp.data || [];
-  var sResp = await sb.from('students').select('id,name').limit(52);
-  var students = sResp.data || [];
-  var sMap = {}; students.forEach(function(s){sMap[s.id]=s;});
-
-  if (all.length === 0) {
-    var html2 = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-      + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🎯 猜同学</div>'
-      + '<p style="text-align:center;padding:40px;color:var(--text-light)">还没有待猜的评价<br>先去写一条吧~</p>'
-      + '<button class="btn btn-primary" style="display:block;margin:0 auto" onclick="_quizStep=\'write\';renderQuiz()">✍️ 我去写一条</button>'
-      + '<div style="text-align:center;margin-top:12px"><span style="font-size:12px;color:var(--text-light)">得分: '+_quizScore2+' | 猜对: '+_quizTotal+'题</span></div>';
-    document.getElementById('view').innerHTML = html2;
-    return;
-  }
-
-  var q = all[Math.floor(Math.random()*Math.min(all.length,10))];
-  var correct = sMap[q.target_id];
-  if (!correct) { showQuizGuess(); return; }
-  var opts = [correct]; var used2={}; used2[correct.id]=true;
-  while(opts.length<4){var rnd2=students[Math.floor(Math.random()*students.length)];if(!used2[rnd2.id]){used2[rnd2.id]=true;opts.push(rnd2);}}
-  for(var i=opts.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=opts[i];opts[i]=opts[j];opts[j]=t;}
-
-  var colors2 = ['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0'];
-  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    + '<div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">🎯 猜同学</div>'
-    + '<div style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:4px">得分: '+_quizScore2+' | 猜对: '+_quizTotal+'题</div>'
-    + '<div style="background:rgba(255,255,255,0.75);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">'
-    + '<p style="font-size:11px;color:var(--text-light);margin-bottom:6px">📝 这是写给谁的？</p>'
-    + '<p style="font-size:15px;font-weight:600;color:var(--text)">'+(q.strengths||'').substring(0,80)+'</p>'
-    + '</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:340px;margin:0 auto">';
-  opts.forEach(function(s){
-    var ci=s.name.charCodeAt(s.name.length-1)%colors2.length;
-    html += '<div onclick="window._quizGuess(\''+q.id+'\',\''+s.id+'\')" style="background:rgba(255,255,255,0.8);border-radius:14px;padding:14px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">'
-      + '<div style="width:40px;height:40px;border-radius:50%;background:'+colors2[ci]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700">'+s.name.charAt(s.name.length-1)+'</div>'
-      + '<span style="font-size:13px;font-weight:600;color:var(--text)">'+s.name+'</span></div>';
-  });
-  html += '</div>';
-  document.getElementById('view').innerHTML = html;
-  window._quizGuess = async function(gid, sid) {
-    var resp2 = await sb.from('game_reviews').select('*').eq('id',gid).single();
-    var q2 = resp2.data;
-    if (!q2) { showQuizGuess(); return; }
-    if (sid === q2.target_id) {
-      _quizScore2 += 100; _quizTotal++;
-      var writer = sMap[q2.writer_id]; var target = sMap[q2.target_id];
-      // 揭露！写入 reviews 表
-      var isAnon = confirm('猜对了！'+(writer?writer.name:'?')+' 写给 '+(target?target.name:'?')+'：\n\n"'+(q2.strengths||'')+'"\n\n作者可以选择匿名。点"确定"=匿名公开，点"取消"=显示名字');
-      await sb.from('reviews').insert({author_id:q2.writer_id,target_id:q2.target_id,strengths:q2.strengths,weaknesses:q2.weaknesses,is_anonymous:isAnon});
-      await sb.from('game_reviews').update({guessed:true}).eq('id',gid);
-      alert('评价已存入'+(target?target.name:'?')+'的主页！');
-    } else {
-      _quizScore2 = Math.max(0, _quizScore2 - 20);
-      alert('猜错了！-20分');
-    }
-    showQuizGuess();
-  };
-}
-
-async function showQuizLeaderboard() {
-  var lbResp = await sb.from('game_scores').select('user_id,score,detail').eq('game','quiz').order('score',{ascending:false}).limit(10);
-  var lb = lbResp.data||[];
-  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🏆 猜同学排行榜</div>'
-    + '<p style="text-align:center;font-size:24px;font-weight:700;color:var(--pink);margin:12px 0">你的得分: '+_quizScore2+'</p>'
-    + '<div style="max-width:300px;margin:0 auto">';
-  lb.forEach(function(r,i){html+='<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:4px;font-size:13px"><span>'+(i+1)+'. '+r.user_id+'</span><span style="font-weight:600">'+r.score+'分</span></div>';});
-  html+='<button class="btn btn-primary mt-16" style="width:100%" onclick="showQuizGuess()">🔄 继续猜</button></div>';
-  document.getElementById('view').innerHTML = html;
-}
-
-/*  游戏C: 翻牌竞速                               */
-/* ============================================ */
-function renderMemory() {
-  _gameMode = 'memory';
-  if (!me) { goGuestLogin(); return; }
-  var colors = ['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0',
-                '#f0b0b0','#c0c0e0','#b0d0b0','#e0c080','#a0c8e0','#e0a0a0','#90c8b0','#d0a8d8'];
-  var names = ['陆','冬','莉','石','新','佑','杨','维','烨','国','浩','燕','吴','苏','芸','香'].slice(0,8);
-  var cards = [];
-  names.forEach(function(n,i){cards.push({id:i,letter:n,color:colors[i*2]});cards.push({id:i,letter:n,color:colors[i*2]});});
-  for (var i=cards.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=cards[i];cards[i]=cards[j];cards[j]=t;}
-
-  var flipped=[]; var matched=[]; var steps=0; var timer=0; var timerInt=null; var lock=false;
-  var saved=false;
-
-  function startT(){if(timerInt)return;timerInt=setInterval(function(){timer++;var el=document.getElementById('memTimer');if(el)el.textContent='⏱ '+timer+'s';},1000);}
-
-  function flip(idx){
-    if(lock||flipped.length>=2||flipped.indexOf(idx)>=0||matched.indexOf(cards[idx].id)>=0)return;
-    startT(); flipped.push(idx);
-    var el=document.getElementById('mc'+idx); if(el){el.classList.add('flipped');el.style.background=cards[idx].color;}
-    if(flipped.length===2){steps++;var se=document.getElementById('memSteps');if(se)se.textContent='👣 '+steps+'步';
-      if(cards[flipped[0]].id===cards[flipped[1]].id){matched.push(cards[flipped[0]].id);flipped=[];
-        if(matched.length===names.length&&!saved){saved=true;clearInterval(timerInt);
-          var score=Math.max(0,10000-(steps*20+timer*10));
-          sb.from('game_scores').insert({user_id:me.id,game:'memory',score:score,detail:JSON.stringify({steps:steps,time:timer})}).then(function(){});
-          setTimeout(function(){alert('🎉 完成！\\n用时 '+timer+' 秒 | '+steps+' 步\\n评分: '+score);},300);}}
-      else{lock=true;setTimeout(function(){flipped.forEach(function(fi){var el2=document.getElementById('mc'+fi);if(el2){el2.classList.remove('flipped');el2.style.background='';}});flipped=[];lock=false;},700);}}
-  }
-
+function showQ(){
+  if(_quizIdx>=_quizData2.length){endQ();return;}
+  var q=_quizData2[_quizIdx]; if(_quizInterval)clearInterval(_quizInterval); _quizTimer=0;
+  var colors=['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0'];
   var html='<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
-    +'<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">⚡ 翻牌竞速</div>'
-    +'<div style="display:flex;gap:16px;justify-content:center;margin-bottom:16px;font-size:14px;font-weight:600"><span id="memTimer">⏱ 0s</span><span id="memSteps">👣 0步</span></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:320px;margin:0 auto">';
-  for(var i=0;i<cards.length;i++){html+='<div class="game-card" id="mc'+i+'" onclick="window._memFlip('+i+')" style="aspect-ratio:1;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;box-shadow:0 2px 12px rgba(100,100,200,0.2)"><span class="game-card-back" style="font-size:24px">?</span><span class="game-card-front" style="display:none;font-size:28px;font-weight:700;color:#fff">'+cards[i].letter+'</span></div>';}
+    +'<div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">🎯 猜同学PK</div>'
+    +'<div style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:4px">第 '+(_quizIdx+1)+'/10 题 · 得分: '+_quizScore+' · <span id="quizTimerEl">⏱ 0s</span></div>'
+    +'<div style="background:rgba(255,255,255,0.75);border-radius:16px;padding:20px;text-align:center;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">'
+    +'<p style="font-size:12px;color:var(--text-light);margin-bottom:8px">📝 这条评价是写给谁的？</p>'
+    +'<p style="font-size:15px;font-weight:600;color:var(--text);line-height:1.6">"'+(q.review.strengths||'').replace(/</g,'&lt;')+'"</p>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:340px;margin:0 auto">';
+  q.options.forEach(function(s){
+    var ci=s.name.charCodeAt(s.name.length-1)%colors.length;
+    html+='<div onclick="window._quizAns(\''+s.id+'\')" style="background:rgba(255,255,255,0.8);border-radius:14px;padding:14px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px">'
+      +'<div style="width:40px;height:40px;border-radius:50%;background:'+colors[ci]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:700">'+s.name.charAt(s.name.length-1)+'</div>'
+      +'<span style="font-size:13px;font-weight:600;color:var(--text)">'+s.name+'</span></div>';
+  });
   html+='</div>';
   document.getElementById('view').innerHTML=html;
-  window._memFlip=function(i){flip(i);};
-  var style=document.createElement('style');style.textContent='.game-card:hover{transform:scale(1.05)}.game-card.flipped .game-card-back{display:none}.game-card.flipped .game-card-front{display:block}.game-lobby-card:hover{transform:scale(1.03);box-shadow:0 8px 32px rgba(0,0,0,0.15)}.quiz-option:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(0,0,0,0.1)}';document.head.appendChild(style);
-  // 排行榜
-  sb.from('game_scores').select('user_id,score').eq('game','memory').order('score',{ascending:false}).limit(5).then(function(r){
-    var lb=r.data||[]; var lbh='<div style="max-width:320px;margin:16px auto"><div style="font-size:13px;font-weight:600;margin-bottom:4px">🏆 排行榜</div>';
-    lb.forEach(function(e,i){lbh+='<div style="display:flex;justify-content:space-between;padding:4px 10px;font-size:12px">'+'<span>'+(i+1)+'. '+e.user_id+'</span><span style="font-weight:600">'+e.score+'</span></div>';});
-    var el=document.getElementById('memLB');if(el)el.innerHTML=lbh;});
-  html+='<div id="memLB"></div>';
+  _quizInterval=setInterval(function(){_quizTimer++;var el=document.getElementById('quizTimerEl');if(el)el.textContent='⏱ '+_quizTimer+'s';},1000);
+  window._quizAns=function(sid){
+    var q2=_quizData2[_quizIdx];
+    if(sid===q2.correct.id){var pts=Math.max(10,100-_quizTimer*5);_quizScore+=pts;}
+    _quizIdx++; showQ();
+  };
+}
+
+async function endQ(){
+  if(_quizInterval){clearInterval(_quizInterval);_quizInterval=null;}
+  try{await sb.from('game_scores').insert({user_id:me.id,game:'quiz',score:_quizScore,detail:'10题结束'});}catch(e){}
+  var lbResp=await sb.from('game_scores').select('user_id,score').eq('game','quiz').order('score',{ascending:false}).limit(10);
+  var lb=lbResp.data||[];
+  var html='<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="_gameMode=\'lobby\';renderGame();return false;">← 游戏大厅</a>'
+    +'<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🎯 游戏结束</div>'
+    +'<p style="text-align:center;font-size:28px;font-weight:700;color:var(--pink);margin:16px 0">得分: '+_quizScore+'</p>'
+    +'<div style="max-width:300px;margin:0 auto"><div style="font-size:14px;font-weight:600;margin-bottom:8px">🏆 排行榜</div>';
+  lb.forEach(function(r,i){html+='<div style="display:flex;justify-content:space-between;padding:6px 12px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:4px;font-size:13px"><span>'+(i+1)+'. '+r.user_id+'</span><span style="font-weight:600">'+r.score+'分</span></div>';});
+  html+='<button class="btn btn-primary mt-16" style="width:100%" onclick="renderQuiz()">🔄 再来一局</button></div>';
+  document.getElementById('view').innerHTML=html;
 }
 
 /* ============================================ */
