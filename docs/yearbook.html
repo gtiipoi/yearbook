@@ -573,7 +573,7 @@ async function getAllStudentIds() {
 /*  渲染入口                                      */
 /* ============================================ */
 async function render() {
-  endSphere(); endChat(); endDM();
+  endSphere(); endChat(); endDM(); endOnline();
   updateNav();
   if (view === 'login') await renderLogin();
   else if (view === 'hall') await renderHall();
@@ -1775,6 +1775,12 @@ let _gameMode = 'lobby';
 function renderGame() {
   if (_gameMode === 'quiz') { renderQuiz(); return; }
   if (_gameMode === 'memory') { renderMemory(); return; }
+  if (_gameMode === 'online') { renderOnlineLobby(); return; }
+  if (_gameMode === 'compat') { renderCompat(); return; }
+  if (_gameMode === 'binchoice') { renderBinChoice(); return; }
+  if (_gameMode === 'anonymous') { renderAnonymous(); return; }
+  if (_gameMode === 'chain') { renderChain(); return; }
+  if (_gameMode === 'race') { renderRace(); return; }
   if (_gameMode === 'truthdare') { renderTruthDare(); return; }
   if (_gameMode === 'crossroads') { renderCrossroads(); return; }
   if (_gameMode === 'blindbox') { renderBlindBox(); return; }
@@ -1789,7 +1795,10 @@ function renderGame() {
 function renderGameLobby() {
   _gameMode = 'lobby';
   var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" onclick="backToHall();return false;">← 返回大厅</a>'
-    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🎮 游戏中心</div>'
+    + '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🎮 游戏中心</div>' +
+    + '<div data-game="online" class="game-lobby-card" style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:16px">'
+    + '<div style="font-size:36px">🌐</div><div><div style="font-weight:700;font-size:16px">在线对战</div><div style="font-size:12px;opacity:0.85">邀请好友，实时互动游戏</div></div></div>'
+    + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:8px">单机游戏</p>'
     + '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:20px">选一个游戏开始吧</p>'
     + '<div style="display:flex;flex-direction:column;gap:12px;max-width:340px;margin:0 auto">'
     + '<div onclick="_gameMode=\'quiz\';renderGame()" class="game-lobby-card" style="background:linear-gradient(135deg,#ff9eb0,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
@@ -1814,11 +1823,456 @@ function renderGameLobby() {
     + '<div style="font-size:36px">🧩</div><div><div style="font-weight:700;font-size:16px">回忆碎片拼图</div><div style="font-size:12px;opacity:0.85">班级合照拼图挑战</div></div></div>'
     + '<div data-game="hotsearch" class="game-lobby-card" style="background:linear-gradient(135deg,#ff6b6b,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
     + '<div style="font-size:36px">🔥</div><div><div style="font-weight:700;font-size:16px">班级热搜榜</div><div style="font-size:12px;opacity:0.85">评价关键词实时热度</div></div></div>'
+        + '<div data-game="crossroads" class="game-lobby-card" style="background:linear-gradient(135deg,#ff9eb0,#ffd980);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🌍</div><div><div style="font-weight:700;font-size:16px">缘分十字路口</div><div style="font-size:12px;opacity:0.85">搞怪投票，看看全班怎么选</div></div></div>'
+    + '<div data-game="blindbox" class="game-lobby-card" style="background:linear-gradient(135deg,#b0a0e8,#f0b0b0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🎁</div><div><div style="font-weight:700;font-size:16px">评价盲盒</div><div style="font-size:12px;opacity:0.85">金币开盲盒，随机看评价</div></div></div>'
+    + '<div data-game="puzzle" class="game-lobby-card" style="background:linear-gradient(135deg,#88c8e8,#b8e0a0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🧩</div><div><div style="font-weight:700;font-size:16px">回忆碎片拼图</div><div style="font-size:12px;opacity:0.85">班级合照拼图挑战</div></div></div>'
+    + '<div data-game="hotsearch" class="game-lobby-card" style="background:linear-gradient(135deg,#ff6b6b,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🔥</div><div><div style="font-weight:700;font-size:16px">班级热搜榜</div><div style="font-size:12px;opacity:0.85">评价关键词实时热度</div></div></div>'
     + '</div>';
   document.getElementById('view').innerHTML = html;
 }
 
 /* ============================================ */
+/* ============================================ */
+/*  在线游戏: 房间系统 + 5个游戏                  */
+/* ============================================ */
+
+// ---- 房间工具函数 ----
+function _genRoomCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function _getRoom(code) {
+  var r = await sb.from('game_rooms').select('*').eq('room_code', code).single();
+  return r.data;
+}
+
+async function _updateRoom(code, updates) {
+  await sb.from('game_rooms').update(updates).eq('room_code', code);
+}
+
+// ---- 在线游戏大厅 ----
+function renderOnlineLobby() {
+  var html = '<a href="yearbook.html" class="btn btn-back mb-16" style="text-decoration:none" data-back="lobby">← 游戏大厅</a>'+
+    '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🌐 在线对战</div>'+
+    '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:20px">邀请好友，实时互动</p>'+
+    '<div style="display:flex;flex-direction:column;gap:12px;max-width:340px;margin:0 auto">'+
+    '<div data-game="compat" class="game-lobby-card" style="background:linear-gradient(135deg,#ff9eb0,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'+
+    '<div style="font-size:36px">🎯</div><div><div style="font-weight:700;font-size:16px">默契问答</div><div style="font-size:12px;opacity:0.85">2人答题，测试你们的默契度</div></div></div>'+
+    '<div data-game="binchoice" class="game-lobby-card" style="background:linear-gradient(135deg,#88c8e8,#b0a0e8);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'+
+    '<div style="font-size:36px">🃏</div><div><div style="font-weight:700;font-size:16px">默契二选一</div><div style="font-size:12px;opacity:0.85">同时选择，看你们有多合拍</div></div></div>'+
+    '<div data-game="anonymous" class="game-lobby-card" style="background:linear-gradient(135deg,#b0a0e8,#80d0c0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'+
+    '<div style="font-size:36px">🎭</div><div><div style="font-weight:700;font-size:16px">匿名真心话</div><div style="font-size:12px;opacity:0.85">匿名身份，畅所欲言</div></div></div>'+
+    '<div data-game="chain" class="game-lobby-card" style="background:linear-gradient(135deg,#ffd980,#ff9eb0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'+
+    '<div style="font-size:36px">⚔️</div><div><div style="font-weight:700;font-size:16px">评价接龙</div><div style="font-size:12px;opacity:0.85">轮流写评价，看看能接多长</div></div></div>'+
+    '<div data-game="race" class="game-lobby-card" style="background:linear-gradient(135deg,#ff6b6b,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'+
+    '<div style="font-size:36px">🏆</div><div><div style="font-weight:700;font-size:16px">班级知识竞赛</div><div style="font-size:12px;opacity:0.85">抢答班级知识，看谁最快</div></div></div>'+
+    '</div>';
+  document.getElementById('view').innerHTML = html;
+}
+
+var _onlineGame = ''; var _roomCode = ''; var _pollTimer = null;
+
+function endOnline() { if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; } }
+
+// ---- 游戏1: 默契问答 ----
+async function renderCompat() {
+  _onlineGame = 'compat'; endOnline();
+  if (!me) { goGuestLogin(); return; }
+  _showRoomUI('🎯 默契问答', '2人各答5道关于对方的题，看看默契度！', 'compat');
+}
+
+async function _startCompat(room) {
+  var players = room.players || [];
+  if (players.length < 2) return;
+  var p1 = players[0], p2 = players[1];
+  // 生成5道题
+  var qs = [
+    {q: p1.name+'最常被评价的优点是什么？', a: '来自数据库'},
+    {q: p2.name+'的性格用一个词形容？', a: ''},
+    {q: '你觉得'+p1.name+'最喜欢的科目是什么？', a: ''},
+    {q: p2.name+'以后最可能做什么职业？', a: ''},
+    {q: p1.name+'和'+p2.name+'谁更可能先结婚？', a: ''}
+  ];
+  await _updateRoom(room.room_code, {status:'playing', data:{questions:qs, step:0, answers:{}}});
+}
+
+function _showRoomUI(title, desc, gameType) {
+  _roomCode = '';
+  var html = '<a href="javascript:void(0)" class="btn btn-back mb-16" style="text-decoration:none" data-back="online">← 在线大厅</a>'+
+    '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">'+title+'</div>'+
+    '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:16px">'+desc+'</p>'+
+    '<div id="roomPanel" style="max-width:360px;margin:0 auto">'+
+    '<div style="display:flex;gap:10px;margin-bottom:16px">'+
+    '<button class="btn btn-primary" id="btnCreate" style="flex:1" onclick="window._createRoom(\''+gameType+'\')">🏠 创建房间</button>'+
+    '<input type="text" id="roomCodeInput" placeholder="输入房间码" maxlength="6" style="flex:1;padding:10px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;text-align:center;font-family:inherit">'+
+    '<button class="btn btn-outline" id="btnJoin" onclick="window._joinRoom()">加入</button></div>'+
+    '<div id="roomStatus" style="text-align:center"></div></div>';
+  document.getElementById('view').innerHTML = html;
+
+  window._createRoom = async function(gt) {
+    var code = _genRoomCode();
+    await sb.from('game_rooms').insert({room_code:code, host_id:me.id, game_type:gt, status:'waiting', players:[{id:me.id,name:me.name}], data:{}});
+    _roomCode = code;
+    _showWaitingRoom(code, gt);
+  };
+  window._joinRoom = async function() {
+    var code = document.getElementById('roomCodeInput').value.trim();
+    if (!code) return;
+    var room = await _getRoom(code);
+    if (!room) { alert('房间不存在'); return; }
+    if (room.status !== 'waiting') { alert('游戏已开始'); return; }
+    var players = room.players || [];
+    if (players.find(function(p){return p.id===me.id;})) { _roomCode=code; _showWaitingRoom(code, room.game_type); return; }
+    players.push({id:me.id, name:me.name});
+    await _updateRoom(code, {players:players});
+    _roomCode = code;
+    _showWaitingRoom(code, room.game_type);
+  };
+}
+
+function _showWaitingRoom(code, gameType) {
+  _pollTimer = setInterval(function() { _pollRoom(code, gameType); }, 2000);
+  var html = '<div style="text-align:center;padding:20px">'+
+    '<p style="font-size:48px;font-weight:700;color:var(--pink);letter-spacing:8px;margin-bottom:8px">'+code+'</p>'+
+    '<p style="font-size:13px;color:var(--text-light);margin-bottom:16px">把房间码发给好友</p>'+
+    '<p style="font-size:14px">⏳ 等待玩家加入...</p>'+
+    '<div id="playerList" style="margin-top:16px"></div>'+
+    '<button class="btn btn-primary mt-16" id="btnStart" style="display:none" onclick="window._startGame()">▶ 开始游戏</button>'+
+    '</div>';
+  document.getElementById('roomStatus').innerHTML = html;
+  window._startGame = async function() {
+    var room = await _getRoom(code);
+    if (room.game_type === 'compat') await _startCompat(room);
+    else if (room.game_type === 'binchoice') await _startBinChoice(room);
+    else if (room.game_type === 'anonymous') await _startAnonymous(room);
+    else if (room.game_type === 'chain') await _startChain(room);
+    else if (room.game_type === 'race') await _startRace(room);
+  };
+}
+
+async function _pollRoom(code, gameType) {
+  var room = await _getRoom(code);
+  if (!room) { clearInterval(_pollTimer); return; }
+  var players = room.players || [];
+  var el = document.getElementById('playerList');
+  if (el) {
+    el.innerHTML = players.map(function(p){return '<div style="padding:8px;background:rgba(255,255,255,0.7);border-radius:8px;margin:4px 0">'+p.name+'</div>';}).join('');
+    var btn = document.getElementById('btnStart');
+    if (btn) btn.style.display = (players.length >= 2 && room.host_id === me.id) ? '' : 'none';
+  }
+  if (room.status === 'playing') {
+    clearInterval(_pollTimer);
+    if (gameType === 'compat') _playCompat(room);
+    else if (gameType === 'binchoice') _playBinChoice(room);
+    else if (gameType === 'anonymous') _playAnonymous(room);
+    else if (gameType === 'chain') _playChain(room);
+    else if (gameType === 'race') _playRace(room);
+  }
+}
+
+// ---- 默契问答游戏逻辑 ----
+var _compatQIdx = 0; var _compatAnswers = [];
+
+async function _playCompat(room) {
+  var data = room.data || {};
+  var qs = data.questions || [];
+  if (_compatQIdx >= qs.length) { _showCompatResult(room); return; }
+  var q = qs[_compatQIdx];
+  var html = '<div id="compatArea" style="max-width:400px;margin:0 auto;text-align:center">'+
+    '<p style="font-size:13px;color:var(--text-light);margin-bottom:4px">第 '+(_compatQIdx+1)+'/'+qs.length+' 题</p>'+
+    '<p style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:16px">'+q.q+'</p>'+
+    '<textarea id="compatAnswer" placeholder="输入你的答案..." maxlength="100" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid #e0d8e8;font-size:14px;resize:vertical;font-family:inherit;min-height:60px"></textarea>'+
+    '<button class="btn btn-primary mt-12" onclick="window._submitCompatAnswer()" style="width:100%">✅ 提交</button></div>';
+  document.getElementById('view').innerHTML = html;
+  _pollTimer = setInterval(async function() {
+    var r = await _getRoom(room.room_code);
+    var answers = (r.data||{}).answers||{};
+    if (answers[me.id] && Object.keys(answers).length >= 2) {
+      clearInterval(_pollTimer);
+      _showCompatReveal(r);
+    }
+  }, 2000);
+  window._submitCompatAnswer = async function() {
+    var ans = document.getElementById('compatAnswer').value.trim();
+    if (!ans) return;
+    _compatAnswers.push(ans);
+    var r = await _getRoom(room.room_code);
+    var data2 = r.data || {}; var answers = data2.answers || {};
+    answers[me.id] = ans;
+    await _updateRoom(room.room_code, {data:{questions:data2.questions, step:_compatQIdx, answers:answers}});
+    _compatQIdx++;
+    if (Object.keys(answers).length >= 2) {
+      clearInterval(_pollTimer);
+      _showCompatReveal(await _getRoom(room.room_code));
+    } else {
+      document.getElementById('compatArea').innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-light)">⏳ 等待对方...</p>';
+    }
+  };
+}
+
+function _showCompatReveal(room) {
+  var data = room.data || {}; var answers = data.answers || {};
+  var players = room.players || [];
+  var meAns = answers[me.id] || '';
+  var otherId = players.find(function(p){return p.id!==me.id;});
+  var otherAns = otherId ? (answers[otherId.id]||'') : '';
+  var html = '<p style="text-align:center;font-size:14px;margin-bottom:8px">📝 你的答案: <b>'+meAns+'</b></p>'+
+    '<p style="text-align:center;font-size:14px;margin-bottom:16px">📝 对方的答案: <b>'+otherAns+'</b></p>'+
+    '<button class="btn btn-primary" style="display:block;margin:0 auto" onclick="window._nextCompatQ()">▶ 下一题</button>';
+  document.getElementById('compatArea').innerHTML += html;
+  window._nextCompatQ = async function() { _compatQIdx++; _playCompat(room); };
+}
+
+async function _showCompatResult(room) {
+  endOnline();
+  var score = Math.floor(Math.random() * 40 + 60); // Simple score
+  var label = score >= 90 ? '💯 灵魂伴侣' : score >= 70 ? '💕 心有灵犀' : '🤝 还需了解';
+  var html = '<div style="text-align:center;padding:40px">'+
+    '<div style="font-size:64px;margin-bottom:16px">'+label+'</div>'+
+    '<div style="font-size:48px;font-weight:700;color:var(--pink)">'+score+'%</div>'+
+    '<p style="color:var(--text-light);margin-top:8px">默契度评分</p>'+
+    '<button class="btn btn-primary mt-16" data-back="online">🏠 返回</button></div>';
+  document.getElementById('view').innerHTML = html;
+  await _updateRoom(room.room_code, {status:'done', data:{score:score, label:label}});
+}
+
+// ---- 游戏2: 默契二选一 ----
+var _binQIdx = 0; var _binScore = 0;
+
+async function renderBinChoice() {
+  _onlineGame = 'binchoice'; endOnline();
+  if (!me) { goGuestLogin(); return; }
+  _showRoomUI('🃏 默契二选一', '10道二选一，同时选看默契', 'binchoice');
+}
+
+async function _startBinChoice(room) {
+  var opts = ['猫 还是 狗？','夏天 还是 冬天？','火锅 还是 烧烤？','电影 还是 看书？','宅家 还是 出去浪？',
+              '早起 还是 熬夜？','甜 还是 咸？','奶茶 还是 咖啡？','海 还是 山？','计划 还是 随缘？'];
+  await _updateRoom(room.room_code, {status:'playing', data:{questions:opts, step:0, answers:{}}});
+}
+
+async function _playBinChoice(room) {
+  var data = room.data || {}; var qs = data.questions || [];
+  if (_binQIdx >= qs.length) { _showBinResult(room); return; }
+  var q = qs[_binQIdx];
+  var html = '<div style="text-align:center;max-width:360px;margin:0 auto">'+
+    '<p style="font-size:13px;color:var(--text-light);margin-bottom:4px">第 '+(_binQIdx+1)+'/'+qs.length+' 题</p>'+
+    '<p style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">'+q+'</p>'+
+    '<div style="display:flex;gap:12px">'+
+    '<button class="btn btn-primary" onclick="window._binAnswer(0)" style="flex:1;font-size:18px;padding:16px">'+q.split(' 还是 ')[0]+'</button>'+
+    '<button class="btn btn-outline" onclick="window._binAnswer(1)" style="flex:1;font-size:18px;padding:16px">'+q.split(' 还是 ')[1].replace('？','')+'</button></div>'+
+    '<div id="binStatus" style="margin-top:12px;font-size:13px;color:var(--text-light)"></div></div>';
+  document.getElementById('view').innerHTML = html;
+  window._binAnswer = async function(choice) {
+    var r = await _getRoom(room.room_code);
+    var data2 = r.data || {}; var answers = data2.answers || {};
+    answers[me.id] = choice;
+    await _updateRoom(room.room_code, {data:{questions:qs, step:_binQIdx, answers:answers}});
+    document.getElementById('binStatus').innerHTML = '⏳ 等待对方...';
+    _pollTimer = setInterval(async function() {
+      var r2 = await _getRoom(room.room_code);
+      var ans2 = (r2.data||{}).answers||{};
+      if (Object.keys(ans2).length >= 2) {
+        clearInterval(_pollTimer);
+        var other = Object.entries(ans2).find(function(e){return e[0]!==me.id;});
+        var match = other && other[1] == choice;
+        if (match) _binScore++;
+        var el = document.getElementById('binStatus');
+        if (el) {
+          el.innerHTML = match ? '✅ 一致！+1分' : '❌ 不一致';
+          setTimeout(function(){ _binQIdx++; _playBinChoice(r2); }, 1500);
+        }
+      }
+    }, 2000);
+  };
+}
+
+async function _showBinResult(room) {
+  endOnline();
+  var html = '<div style="text-align:center;padding:40px">'+
+    '<div style="font-size:64px">' + (_binScore >= 8 ? '💯' : _binScore >= 5 ? '🤝' : '😅') + '</div>'+
+    '<div style="font-size:48px;font-weight:700;color:var(--pink)">'+_binScore+'/10</div>'+
+    '<button class="btn btn-primary mt-16" data-back="online">🏠 返回</button></div>';
+  document.getElementById('view').innerHTML = html;
+}
+
+// ---- 游戏3: 匿名真心话 ----
+async function renderAnonymous() {
+  _onlineGame = 'anonymous'; endOnline();
+  if (!me) { goGuestLogin(); return; }
+  _showRoomUI('🎭 匿名真心话', '多人匿名聊天，解散后无记录', 'anonymous');
+}
+
+async function _startAnonymous(room) {
+  var players = room.players || [];
+  players.forEach(function(p,i){ p.anonName = '同学'+(i+1); });
+  await _updateRoom(room.room_code, {status:'playing', players:players, data:{messages:[]}});
+}
+
+async function _playAnonymous(room) {
+  var players = room.players || [];
+  var meAnon = (players.find(function(p){return p.id===me.id;})||{}).anonName || '?';
+  var msgs = (room.data||{}).messages || [];
+  var html = '<div style="max-width:400px;margin:0 auto">'+
+    '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:4px">你的身份: <b>'+meAnon+'</b></p>'+
+    '<div style="text-align:center;font-size:11px;color:#ff6b6b;margin-bottom:8px">你的发言会以匿名身份显示</div>'+
+    '<div id="anonMsgs" style="max-height:300px;overflow-y:auto;margin-bottom:12px">';
+  msgs.forEach(function(m){
+    html += '<div style="padding:6px 10px;background:rgba(255,255,255,0.7);border-radius:8px;margin-bottom:4px;font-size:13px"><b>'+m.from+'</b>: '+m.text+'</div>';
+  });
+  html += '</div><div style="display:flex;gap:8px">'+
+    '<input type="text" id="anonInput" placeholder="说点什么..." maxlength="200" style="flex:1;padding:10px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:13px;font-family:inherit">'+
+    '<button class="btn btn-primary" onclick="window._sendAnon()">发送</button></div>'+
+    '<button class="btn btn-outline mt-12" style="width:100%" onclick="endOnline();_gameMode=\'online\';renderGame();">🚪 退出房间</button></div>';
+  document.getElementById('view').innerHTML = html;
+  document.getElementById('anonInput').onkeydown = function(e) { if(e.key==='Enter') window._sendAnon(); };
+  window._sendAnon = async function() {
+    var inp = document.getElementById('anonInput'); if (!inp) return;
+    var txt = inp.value.trim(); if (!txt) return; inp.value = '';
+    var r = await _getRoom(room.room_code);
+    var msgs2 = (r.data||{}).messages || [];
+    msgs2.push({from:meAnon, text:txt});
+    await _updateRoom(room.room_code, {data:{messages:msgs2}});
+    _playAnonymous(r);
+  };
+  _pollTimer = setInterval(async function() {
+    var r = await _getRoom(room.room_code);
+    if (!r || r.status === 'done') { clearInterval(_pollTimer); return; }
+    var msgs2 = (r.data||{}).messages || [];
+    var el = document.getElementById('anonMsgs');
+    if (el && msgs2.length > msgs.length) { _playAnonymous(r); clearInterval(_pollTimer); }
+  }, 2000);
+}
+
+// ---- 游戏4: 评价接龙 ----
+var _chainTarget = null;
+
+async function renderChain() {
+  _onlineGame = 'chain'; endOnline();
+  if (!me) { goGuestLogin(); return; }
+  _showRoomUI('⚔️ 评价接龙', '每人写评价给上一个人提到的同学', 'chain');
+}
+
+async function _startChain(room) {
+  var sResp = await sb.from('students').select('id,name').limit(52);
+  var students = (sResp.data||[]).filter(function(s){return s.name.length>=2;});
+  var first = students[Math.floor(Math.random()*students.length)];
+  await _updateRoom(room.room_code, {status:'playing', data:{chain:[], currentTarget:first, turn:0}});
+}
+
+async function _playChain(room) {
+  var data = room.data || {}; var chain = data.chain || [];
+  var target = data.currentTarget; var turn = data.turn || 0;
+  var players = room.players || [];
+  // Check if it's my turn
+  var myTurnIdx = players.findIndex(function(p){return p.id===me.id;});
+  var isMyTurn = (myTurnIdx === turn % players.length);
+  if (!isMyTurn) {
+    document.getElementById('view').innerHTML = '<div style="text-align:center;padding:40px"><p>⏳ 等待第'+(turn+1)+'位玩家写评价...</p><p style="font-size:12px;color:var(--text-light)">当前目标: '+target.name+'</p></div>';
+    _pollTimer = setInterval(async function() {
+      var r = await _getRoom(room.room_code);
+      var d2 = r.data || {}; var newChain = d2.chain || [];
+      if (newChain.length > chain.length) { clearInterval(_pollTimer); _playChain(r); }
+    }, 2000);
+    return;
+  }
+  // My turn
+  var html = '<div style="max-width:360px;margin:0 auto;text-align:center">'+
+    '<p style="font-size:14px;color:var(--text-light);margin-bottom:4px">轮到你了！</p>'+
+    '<div style="width:60px;height:60px;border-radius:50%;background:#ff9eb0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:700;margin:12px auto">'+target.name.charAt(target.name.length-1)+'</div>'+
+    '<p style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px">给 '+target.name+' 写评价</p>'+
+    '<textarea id="chainStrengths" placeholder="优点..." maxlength="200" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #e0d8e8;font-size:13px;resize:vertical;font-family:inherit;min-height:50px;margin-bottom:8px"></textarea>'+
+    '<button class="btn btn-primary" onclick="window._submitChain()" style="width:100%">📝 提交</button></div>';
+  document.getElementById('view').innerHTML = html;
+  window._submitChain = async function() {
+    var st = document.getElementById('chainStrengths').value.trim();
+    if (!st) return;
+    var r = await _getRoom(room.room_code);
+    var d2 = r.data || {}; var newChain = d2.chain || [];
+    newChain.push({from:me.name, to:target.name, content:st, fromId:me.id, toId:target.id});
+    // Random next target
+    var sResp = await sb.from('students').select('id,name').limit(52);
+    var students = (sResp.data||[]).filter(function(s){return s.name.length>=2 && s.id!==target.id;});
+    var next = students[Math.floor(Math.random()*students.length)];
+    await _updateRoom(room.room_code, {data:{chain:newChain, currentTarget:next, turn:(d2.turn||0)+1}});
+    // Also save to reviews
+    try{await sb.from('reviews').insert({author_id:me.id,target_id:target.id,strengths:st,is_anonymous:false});}catch(e){}
+    _playChain(await _getRoom(room.room_code));
+  };
+}
+
+// ---- 游戏5: 班级知识竞赛 ----
+var _raceScore = 0;
+
+async function renderRace() {
+  _onlineGame = 'race'; endOnline();
+  if (!me) { goGuestLogin(); return; }
+  _showRoomUI('🏆 班级知识竞赛', '抢答班级知识，手速王！', 'race');
+}
+
+async function _startRace(room) {
+  var qs2 = [
+    {q:'第一对互评的同学是谁？', a:''},
+    {q:'被评价最多的同学是谁？', a:''},
+    {q:'评价里出现最多的词是？', a:''},
+    {q:'第一个注册的同学是？', a:''},
+    {q:'"霸道总裁"是谁的外号？', a:''}
+  ];
+  await _updateRoom(room.room_code, {status:'playing', data:{questions:qs2, step:0, winner:null}});
+}
+
+async function _playRace(room) {
+  var data = room.data || {}; var qs = data.questions || [];
+  var step = data.step || 0;
+  if (step >= qs.length) { _showRaceResult(room); return; }
+  var q = qs[step];
+  var html = '<div style="text-align:center;max-width:360px;margin:0 auto">'+
+    '<p style="font-size:13px;color:var(--text-light);margin-bottom:4px">第 '+(step+1)+'/'+qs.length+' 题 · '+_raceScore+'分</p>'+
+    '<p style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:20px">'+q.q+'</p>'+
+    '<input type="text" id="raceAnswer" placeholder="输入答案..." maxlength="50" style="width:100%;padding:12px;border-radius:24px;border:1.5px solid #e0d8e8;font-size:14px;text-align:center;font-family:inherit">'+
+    '<button class="btn btn-primary mt-12" onclick="window._raceSubmit()" style="width:100%">🚀 抢答</button>'+
+    '<div id="raceStatus" style="margin-top:8px;font-size:12px;color:var(--text-light)"></div></div>';
+  document.getElementById('view').innerHTML = html;
+  document.getElementById('raceAnswer').onkeydown = function(e) { if(e.key==='Enter') window._raceSubmit(); };
+  window._raceSubmit = async function() {
+    var ans = document.getElementById('raceAnswer').value.trim();
+    if (!ans) return;
+    var r = await _getRoom(room.room_code);
+    var d2 = r.data || {};
+    if (d2.winner) { document.getElementById('raceStatus').textContent = '已被抢先！'; return; }
+    d2.winner = me.id;
+    await _updateRoom(room.room_code, {data:{questions:qs, step:step, winner:me.id, winnerName:me.name, winnerAns:ans}});
+    _raceScore += 10;
+    document.getElementById('raceStatus').textContent = '✅ 你抢到了！+10分';
+    setTimeout(async function() {
+      await _updateRoom(room.room_code, {data:{questions:qs, step:step+1, winner:null, winnerName:null, winnerAns:null}});
+      _playRace(await _getRoom(room.room_code));
+    }, 2000);
+  };
+  _pollTimer = setInterval(async function() {
+    var r = await _getRoom(room.room_code);
+    var d2 = r.data || {};
+    if (d2.winner && d2.winner !== me.id) {
+      clearInterval(_pollTimer);
+      document.getElementById('raceStatus').textContent = '⚡ '+d2.winnerName+' 抢到了！答案: '+d2.winnerAns;
+      setTimeout(function() { _playRace(r); }, 2000);
+    }
+  }, 2000);
+}
+
+async function _showRaceResult(room) {
+  endOnline();
+  var html = '<div style="text-align:center;padding:40px">'+
+    '<div style="font-size:64px">🏆</div>'+
+    '<div style="font-size:48px;font-weight:700;color:var(--pink)">'+_raceScore+'分</div>'+
+    '<button class="btn btn-primary mt-16" data-back="online">🏠 返回</button></div>';
+  document.getElementById('view').innerHTML = html;
+}
+
 /*  游戏A: 猜同学PK                              */
 var _quizIdx = 0; var _quizScore = 0; var _quizTimer = 0; var _quizInterval = null;
 var _quizData2 = [];
@@ -2301,6 +2755,214 @@ async function renderHotSearch() {
   };
 }
 
+/* ============================================ */
+/*  游戏G: 缘分十字路口                         */
+/* ============================================ */
+async function renderCrossroads() {
+  _gameMode = 'crossroads';
+  if (!me) { goGuestLogin(); return; }
+  var questions = [
+    '谁更可能成为CEO？','谁会最早结婚？','谁最可能环游世界？','谁最可能上电视？',
+    '谁最可能养宠物？','谁最可能成为老师？','谁最可能赚到第一个100万？','谁最可能发明新东西？',
+    '谁的婚礼会最豪华？','谁最可能搬到国外住？','谁最可能写一本书？','谁最可能开公司？',
+    '谁最可能成为网红？','谁最可能活到100岁？','谁最可能成为家长群里最活跃的？'
+  ];
+  var sResp = await sb.from('students').select('id,name').limit(52);
+  var students = (sResp.data||[]).filter(function(s){return s.name.length>=2;});
+  var colors=['#ff9eb0','#ffb088','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0','#c0c0e0'];
+
+  var q = questions[Math.floor(Math.random()*questions.length)];
+  var a=students[Math.floor(Math.random()*students.length)];
+  var b=students[Math.floor(Math.random()*students.length)];
+  while(b.id===a.id) b=students[Math.floor(Math.random()*students.length)];
+  var ca=a.name.charCodeAt(a.name.length-1)%colors.length;
+  var cb=b.name.charCodeAt(b.name.length-1)%colors.length;
+
+  var vResp = await sb.from('crossroads_votes').select('voted_id').eq('question',q);
+  var votes={}; var total=0;
+  (vResp.data||[]).forEach(function(v){votes[v.voted_id]=(votes[v.voted_id]||0)+1;total++;});
+  var aPct=total>0?Math.round((votes[a.id]||0)/total*100):50;
+  var bPct=100-aPct;
+
+  var html='<a href="javascript:void(0)" class="btn btn-back mb-16" style="text-decoration:none" data-back="lobby">'+
+    '← 游戏大厅</a>'+
+    '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🌍 缘分十字路口</div>'+
+    '<p style="text-align:center;font-size:13px;color:var(--text-light);margin-bottom:8px">点击你支持的选手！</p>'+
+    '<div style="text-align:center;font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px">'+q+'</div>'+
+    '<div style="display:flex;gap:16px;justify-content:center;align-items:center">'+
+    '<div id="crsVoteA" data-crs-vote="'+a.id+'" style="cursor:pointer;text-align:center;padding:16px 24px;background:rgba(255,255,255,0.8);border-radius:16px;min-width:120px">'+
+    '<div style="width:64px;height:64px;border-radius:50%;background:'+colors[ca]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:700;margin:0 auto 8px">'+a.name.charAt(a.name.length-1)+'</div>'+
+    '<div style="font-size:16px;font-weight:600;color:var(--text)">'+a.name+'</div>'+
+    '<div style="font-size:24px;font-weight:700;color:var(--pink);margin-top:4px">'+aPct+'%</div></div>'+
+    '<div style="font-size:24px;font-weight:700;color:var(--text-light)">VS</div>'+
+    '<div id="crsVoteB" data-crs-vote="'+b.id+'" style="cursor:pointer;text-align:center;padding:16px 24px;background:rgba(255,255,255,0.8);border-radius:16px;min-width:120px">'+
+    '<div style="width:64px;height:64px;border-radius:50%;background:'+colors[cb]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:700;margin:0 auto 8px">'+b.name.charAt(b.name.length-1)+'</div>'+
+    '<div style="font-size:16px;font-weight:600;color:var(--text)">'+b.name+'</div>'+
+    '<div style="font-size:24px;font-weight:700;color:var(--pink);margin-top:4px">'+bPct+'%</div></div>'+
+    '</div><div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-light)">共 '+total+' 票</div>'+
+    '<button class="btn btn-primary" style="display:block;margin:16px auto" onclick="renderCrossroads()">🔄 换一题</button>';
+  document.getElementById('view').innerHTML=html;
+  // Bind vote clicks
+  setTimeout(function(){
+    var va=document.getElementById('crsVoteA'); if(va) va.onclick=function(){window._crsVote(a.id);};
+    var vb=document.getElementById('crsVoteB'); if(vb) vb.onclick=function(){window._crsVote(b.id);};
+  },50);
+  window._crsVote=async function(sid){
+    try{await sb.from('crossroads_votes').upsert({question:q,voted_id:sid,voter_id:me.id},{onConflict:'question,voter_id'});}catch(e){}
+    renderCrossroads();
+  };
+}
+
+/* ============================================ */
+/*  游戏H: 评价盲盒                             */
+/* ============================================ */
+async function renderBlindBox() {
+  _gameMode = 'blindbox';
+  if (!me) { goGuestLogin(); return; }
+  var countResp = await sb.from('reviews').select('id',{count:'exact',head:true}).eq('author_id',me.id);
+  var coins = countResp.count||0;
+  var html='<a href="javascript:void(0)" class="btn btn-back mb-16" style="text-decoration:none" data-back="lobby">'+
+    '← 游戏大厅</a>'+
+    '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🎁 评价盲盒</div>'+
+    '<p style="text-align:center;font-size:14px;color:var(--text);margin-bottom:4px">💰 你的金币: <b style="color:#ffb088;font-size:20px">'+coins+'</b></p>'+
+    '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">每写一条评价获得1金币</p>'+
+    '<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">'+
+    '<div id="boxNormal" style="cursor:pointer;background:linear-gradient(135deg,#e0d8e8,#f5f0f8);border-radius:16px;padding:24px 20px;text-align:center;min-width:140px">'+
+    '<div style="font-size:40px">📦</div><div style="font-weight:700;margin-top:8px">普通盲盒</div><div style="font-size:13px;color:var(--text-light)">1金币</div></div>'+
+    '<div id="boxGold" style="cursor:pointer;background:linear-gradient(135deg,#ffd980,#ffb088);border-radius:16px;padding:24px 20px;text-align:center;min-width:140px">'+
+    '<div style="font-size:40px">✨</div><div style="font-weight:700;margin-top:8px">金色盲盒</div><div style="font-size:13px;color:var(--text-light)">3金币 - 最走心评价</div></div>'+
+    '</div><div id="boxResult" style="text-align:center;margin-top:20px"></div>';
+  document.getElementById('view').innerHTML=html;
+  setTimeout(function(){
+    var bn=document.getElementById('boxNormal'); if(bn) bn.onclick=function(){window._openBox(1);};
+    var bg=document.getElementById('boxGold'); if(bg) bg.onclick=function(){window._openBox(3);};
+  },50);
+  window._openBox=async function(cost){
+    if(coins<cost){alert('金币不足！写评价赚金币吧~');return;}
+    var rResp=await sb.from('reviews').select('strengths,weaknesses').not('strengths','is',null).neq('strengths','');
+    var revs=rResp.data||[];
+    if(revs.length===0){alert('还没有评价可开');return;}
+    var picked;
+    if(cost===3){revs.sort(function(a,b){return(b.strengths||'').length-(a.strengths||'').length;});picked=revs[0];}
+    else{picked=revs[Math.floor(Math.random()*revs.length)];}
+    var boxEl=document.getElementById('boxResult');
+    if(boxEl){
+      boxEl.innerHTML='<div style="animation:boxOpen 0.6s ease"><div style="font-size:36px;margin-bottom:8px">🎉</div>'+
+        '<div style="background:rgba(255,255,255,0.8);border-radius:16px;padding:20px;max-width:360px;margin:0 auto;font-size:15px;line-height:1.8;color:var(--text)">'+
+        '<p style="color:var(--pink);font-weight:600;margin-bottom:8px">✨ 优点</p><p>'+picked.strengths.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p>'+
+        (picked.weaknesses?'<p style="color:var(--purple);font-weight:600;margin:12px 0 8px">💡 待改进</p><p>'+picked.weaknesses.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</p>':'')+
+        '</div></div>';
+    }
+  };
+}
+
+/* ============================================ */
+/*  游戏I: 回忆碎片拼图                         */
+/* ============================================ */
+var _puzzleTiles=[], _puzzleEmpty=0, _puzzleTimer=0, _puzzleInt=null, _puzzleNames=[];
+
+function renderPuzzle(){
+  _gameMode='puzzle'; _puzzleTimer=0; if(_puzzleInt)clearInterval(_puzzleInt);
+  _puzzleNames=['陆','冬','莉','戴','用','华','国','浩','燕'];
+  _puzzleTiles=_puzzleNames.slice(); _puzzleEmpty=8;
+  for(var i=0;i<20;i++){
+    var neighbors=[];
+    var er=Math.floor(_puzzleEmpty/3), ec=_puzzleEmpty%3;
+    if(er>0)neighbors.push(_puzzleEmpty-3);
+    if(er<2)neighbors.push(_puzzleEmpty+3);
+    if(ec>0)neighbors.push(_puzzleEmpty-1);
+    if(ec<2)neighbors.push(_puzzleEmpty+1);
+    var swap=neighbors[Math.floor(Math.random()*neighbors.length)];
+    var t=_puzzleTiles[_puzzleEmpty]; _puzzleTiles[_puzzleEmpty]=_puzzleTiles[swap]; _puzzleTiles[swap]=t;
+    _puzzleEmpty=swap;
+  }
+  _puzzleDraw();
+  _puzzleInt=setInterval(function(){_puzzleTimer++;var el=document.getElementById('pzTimer');if(el)el.textContent='⏱ '+_puzzleTimer+'s';},1000);
+}
+
+function _puzzleDraw(){
+  var colors=['#ff9eb0','#ffb088','#ffd980','#b8e0a0','#88c8e8','#b0a0e8','#e8a0d0','#80d0c0','#f0b0b0'];
+  var html='<a href="javascript:void(0)" class="btn btn-back mb-16" style="text-decoration:none" data-back="lobby">'+
+    '← 游戏大厅</a>'+
+    '<div class="section-title" style="font-size:16px;font-weight:700;margin-bottom:4px">🧩 回忆碎片拼图</div>'+
+    '<div style="text-align:center;font-size:14px;margin-bottom:12px"><span id="pzTimer">⏱ '+_puzzleTimer+'s</span></div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,100px);gap:4px;justify-content:center">';
+  for(var i=0;i<9;i++){
+    if(i===_puzzleEmpty){
+      html+='<div style="width:100px;height:100px;background:transparent"></div>';
+    }else{
+      html+='<div data-pz="'+i+'" style="width:100px;height:100px;background:'+colors[i%9]+';border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:36px;font-weight:700;cursor:pointer">'+_puzzleTiles[i]+'</div>';
+    }
+  }
+  html+='</div>';
+  document.getElementById('view').innerHTML=html;
+  setTimeout(function(){
+    var tiles=document.querySelectorAll('[data-pz]');
+    tiles.forEach(function(t){t.onclick=function(){window._pzClick(parseInt(this.getAttribute('data-pz')));};});
+  },50);
+  window._pzClick=function(i){
+    var er=Math.floor(_puzzleEmpty/3), ec=_puzzleEmpty%3;
+    var cr=Math.floor(i/3), cc=i%3;
+    if((Math.abs(er-cr)+Math.abs(ec-cc))===1){
+      var t=_puzzleTiles[_puzzleEmpty]; _puzzleTiles[_puzzleEmpty]=_puzzleTiles[i]; _puzzleTiles[i]=t;
+      _puzzleEmpty=i; _puzzleDraw();
+      var solved=true;
+      for(var j=0;j<8;j++){if(_puzzleTiles[j]!==_puzzleNames[j]){solved=false;break;}}
+      if(solved){clearInterval(_puzzleInt);_puzzleInt=null;
+        try{sb.from('game_scores').insert({user_id:me.id,game:'puzzle',score:_puzzleTimer,detail:'3x3 solved'}).then(function(){});}catch(e){}
+        setTimeout(function(){alert('🎉 拼好了！用时 '+_puzzleTimer+' 秒');},200);}
+    }
+  };
+}
+
+/* ============================================ */
+/*  游戏J: 班级热搜榜                           */
+/* ============================================ */
+async function renderHotSearch() {
+  _gameMode = 'hotsearch';
+  if (!me) { goGuestLogin(); return; }
+  var html='<a href="javascript:void(0)" class="btn btn-back mb-16" style="text-decoration:none" data-back="lobby">'+
+    '← 游戏大厅</a>'+
+    '<div class="section-title" style="font-size:18px;font-weight:700;margin-bottom:4px">🔥 班级热搜榜</div>'+
+    '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">关键词提取自真实评价</p>'+
+    '<div id="hotList" style="text-align:center;color:var(--text-light);padding:20px">分析中...</div>';
+  document.getElementById('view').innerHTML=html;
+
+  var rResp=await sb.from('reviews').select('strengths,weaknesses');
+  var revs=rResp.data||[];
+  var words={};
+  var kwList=['漂亮','帅气','靠谱','温柔','聪明','幽默','细心','努力','大方','可爱','厉害','认真','善良','霸道','有趣','学霸','女神','男神','暖心','阳光','稳重','开朗','美丽','强大'];
+  revs.forEach(function(r){
+    var txt=(r.strengths||'')+(r.weaknesses||'');
+    kwList.forEach(function(w){if(txt.indexOf(w)>=0) words[w]=(words[w]||0)+1;});
+  });
+  var sorted=Object.entries(words).filter(function(e){return e[1]>=2;}).sort(function(a,b){return b[1]-a[1];}).slice(0,15);
+
+  var lResp=await sb.from('hotsearch_likes').select('keyword');
+  var likes={}; (lResp.data||[]).forEach(function(l){likes[l.keyword]=(likes[l.keyword]||0)+1;});
+
+  var hotHTML='';
+  sorted.forEach(function(e,i){
+    var icon=i===0?'🥇':i===1?'🥈':i===2?'🥉':'🔥';
+    var lc=likes[e[0]]||0;
+    hotHTML+='<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.8);border-radius:12px;padding:12px 16px;margin-bottom:8px;max-width:400px;margin-left:auto;margin-right:auto">'+
+      '<span style="font-size:18px">'+icon+'</span>'+
+      '<span style="flex:1;text-align:left;font-size:15px;font-weight:600;color:var(--text)">#'+e[0]+'</span>'+
+      '<span style="font-size:12px;color:var(--text-light)">'+e[1]+'次</span>'+
+      '<span data-like="'+e[0]+'" style="cursor:pointer;font-size:14px;color:var(--pink)">❤️ '+lc+'</span>'+
+      '</div>';
+  });
+  document.getElementById('hotList').innerHTML=hotHTML||'<p>数据还不够，多写评价吧~</p>';
+  setTimeout(function(){
+    var btns=document.querySelectorAll('[data-like]');
+    btns.forEach(function(b){b.onclick=function(){window._likeKW(this.getAttribute('data-like'));};});
+  },50);
+  window._likeKW=async function(kw){
+    try{await sb.from('hotsearch_likes').upsert({keyword:kw,user_id:me.id},{onConflict:'keyword,user_id'});}catch(e){}
+    renderHotSearch();
+  };
+}
+
 /*  游戏D: 真心话大冒险                           */
 /* ============================================ */
 var _tdState = 'idle'; var _tdTimer = null; var _tdIdx = 0;
@@ -2325,6 +2987,14 @@ async function renderTruthDare() {
     + '<button class="btn btn-primary" id="tdSpinBtn" onclick="window._tdSpin()" style="font-size:16px;padding:12px 32px">🎲 开始转动</button>'
     + '<div id="tdResult" style="margin-top:20px;font-size:15px;font-weight:600;color:var(--text)"></div>'
     + '<div id="tdDare" style="margin-top:12px;font-size:14px;color:var(--purple);font-weight:600"></div>'
+        + '<div data-game="crossroads" class="game-lobby-card" style="background:linear-gradient(135deg,#ff9eb0,#ffd980);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🌍</div><div><div style="font-weight:700;font-size:16px">缘分十字路口</div><div style="font-size:12px;opacity:0.85">搞怪投票，看看全班怎么选</div></div></div>'
+    + '<div data-game="blindbox" class="game-lobby-card" style="background:linear-gradient(135deg,#b0a0e8,#f0b0b0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🎁</div><div><div style="font-weight:700;font-size:16px">评价盲盒</div><div style="font-size:12px;opacity:0.85">金币开盲盒，随机看评价</div></div></div>'
+    + '<div data-game="puzzle" class="game-lobby-card" style="background:linear-gradient(135deg,#88c8e8,#b8e0a0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🧩</div><div><div style="font-weight:700;font-size:16px">回忆碎片拼图</div><div style="font-size:12px;opacity:0.85">班级合照拼图挑战</div></div></div>'
+    + '<div data-game="hotsearch" class="game-lobby-card" style="background:linear-gradient(135deg,#ff6b6b,#ffb088);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
+    + '<div style="font-size:36px">🔥</div><div><div style="font-weight:700;font-size:16px">班级热搜榜</div><div style="font-size:12px;opacity:0.85">评价关键词实时热度</div></div></div>'
         + '<div data-game="crossroads" class="game-lobby-card" style="background:linear-gradient(135deg,#ff9eb0,#ffd980);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
     + '<div style="font-size:36px">🌍</div><div><div style="font-weight:700;font-size:16px">缘分十字路口</div><div style="font-size:12px;opacity:0.85">搞怪投票，看看全班怎么选</div></div></div>'
     + '<div data-game="blindbox" class="game-lobby-card" style="background:linear-gradient(135deg,#b0a0e8,#f0b0b0);border-radius:16px;padding:18px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:14px">'
@@ -2855,6 +3525,20 @@ document.getElementById('view').addEventListener('click', function(e) {
     e.preventDefault();
     var gmode = card.getAttribute('data-game');
     if (gmode) { _gameMode = gmode; renderGame(); return; }
+  }
+  // 游戏大厅卡片点击
+  var card = e.target.closest('[data-game]');
+  if (card) {
+    e.preventDefault();
+    var gmode = card.getAttribute('data-game');
+    if (gmode) { _gameMode = gmode; renderGame(); return; }
+  }
+  // 游戏内返回按钮
+  var back = e.target.closest('[data-back]');
+  if (back) {
+    e.preventDefault();
+    var bmode = back.getAttribute('data-back');
+    if (bmode) { _gameMode = bmode; renderGame(); return; }
   }
   // 游戏大厅卡片点击
   var card = e.target.closest('[data-game]');
