@@ -1503,8 +1503,8 @@ async function renderProfile() {
       <p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:12px">分享照片和视频到你的主页</p>
       <div class="upload-area" id="mediaUploadArea" style="margin-bottom:16px">
         <div class="ua-icon">📤</div>
-        <div class="ua-text">点击上传照片/视频（最大10MB）</div>
-        <input type="file" id="mediaFile" accept="image/*,video/*" multiple>
+        <div class="ua-text">点击上传照片/视频（最大50MB）</div>
+        <input type="file" id="mediaFile" multiple>
       </div>
       <div id="myMediaGrid"></div>
     </div>` : ''}
@@ -1527,7 +1527,7 @@ async function renderProfile() {
           let done = 0;
           for (let fi = 0; fi < files.length; fi++) {
             const file = files[fi];
-            if (file.size > 10*1024*1024) { alert(file.name + ' 超过 10MB，已跳过'); done++; continue; }
+            if (file.size > 50*1024*1024) { alert(file.name + ' 超过 50MB，已跳过'); done++; continue; }
             const isVideo = file.type.startsWith('video/');
             const fn = Date.now() + '_' + fi + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
             const { error: upErr } = await sb.storage.from('yearbook-assets').upload('media/' + fn, file);
@@ -2193,8 +2193,8 @@ async function renderPhotos() {
     ${me ? `
     <div class="upload-area" id="uploadArea">
       <div class="ua-icon">📤</div>
-      <div class="ua-text">点击上传照片</div>
-      <input type="file" id="photoFile" accept="image/*,video/*" multiple>
+      <div class="ua-text">点击上传照片/视频（最大50MB）</div>
+      <input type="file" id="photoFile" multiple>
     </div>
     ` : '<p style="text-align:center;font-size:12px;color:var(--text-light);margin-bottom:16px">登录后即可上传照片</p>'}
     ${photosHTML}
@@ -2216,7 +2216,7 @@ async function renderPhotos() {
         let done = 0;
         for (let fi = 0; fi < files.length; fi++) {
           const file = files[fi];
-          if (file.size > 5 * 1024 * 1024) { alert(file.name + ' 超过 5MB，已跳过'); done++; continue; }
+          if (file.size > 50 * 1024 * 1024) { alert(file.name + ' 超过 50MB，已跳过'); done++; continue; }
 
           const fileName = Date.now() + '_' + fi + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
 
