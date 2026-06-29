@@ -1516,7 +1516,7 @@ async function loadMyMedia() {
   grid.innerHTML = '<div class="photo-grid">' + media.map(m => {
     const isVideo = m.type === 'video';
     return `<div class="photo-card" style="position:relative">
-      ${isVideo ? `<video src="${m.url}" controls style="width:100%;height:180px;object-fit:cover;display:block" onclick="event.stopPropagation();showLightbox('${m.url}',true)"></video>` : `<img src="${m.url}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block" onclick="event.stopPropagation();showLightbox('${m.url}',false)">`}
+      ${isVideo ? `<video src="${m.url}" controls style="width:100%;height:180px;object-fit:cover;display:block"></video>` : `<img src="${m.url}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;cursor:pointer">`}
       <button onclick="deleteMedia('${m.id}')" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;font-size:14px;cursor:pointer;line-height:24px;text-align:center" title="删除">✕</button>
     </div>`;
   }).join('') + '</div>';
@@ -2031,10 +2031,10 @@ async function renderPhotos() {
     photosHTML = '<div class="photo-grid">' + photos.map(p => {
       const t = new Date(p.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
       const uploaderName = p.uploader ? p.uploader.name : '未知';
-      const canDelete = me && p.uploader_id === me.id;
+      const canDelete = me && (p.uploader_id === me.id || me.id === 's24' || !p.uploader_id);
       const isVid = p.type === 'video';
       return `<div class="photo-card" style="position:relative">
-        ${isVid ? `<video src="${p.url}" controls style="width:100%;height:180px;object-fit:cover;display:block" onclick="event.stopPropagation();showLightbox('${p.url}',true)"></video>` : `<img src="${p.url}" alt="${p.caption||''}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;cursor:pointer" onclick="event.stopPropagation();showLightbox('${p.url}',false)">`}
+        ${isVid ? `<video src="${p.url}" controls style="width:100%;height:180px;object-fit:cover;display:block"></video>` : `<img src="${p.url}" alt="${p.caption||''}" loading="lazy" style="width:100%;height:180px;object-fit:cover;display:block;cursor:pointer">`}
         ${canDelete ? `<button onclick="deletePhoto('${p.id}')" style="position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;border:none;background:rgba(0,0,0,0.5);color:#fff;font-size:14px;cursor:pointer;line-height:24px;text-align:center;z-index:2" title="删除">✕</button>` : ''}
         <div class="pc-info">
           ${p.caption ? `<div class="pc-caption">${p.caption}</div>` : ''}
@@ -2182,6 +2182,13 @@ document.getElementById('view').addEventListener('click', function(e) {
     e.preventDefault();
     var pid = btn.getAttribute('data-dm-partner');
     if (pid) openDMChat(pid);
+  }
+  // 点击照片/视频放大查看
+  var media = e.target.closest('.photo-card img, .photo-card video');
+  if (media) {
+    e.preventDefault();
+    var src = media.src || media.currentSrc || '';
+    if (src) showLightbox(src, media.tagName === 'VIDEO');
   }
 });
 init();
